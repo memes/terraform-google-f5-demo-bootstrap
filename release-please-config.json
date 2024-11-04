@@ -1,0 +1,7 @@
+{
+    "release-type": "terraform-module",
+    "bump-minor-pre-major": true,
+    "packages": {
+        ".": {}
+    }
+}

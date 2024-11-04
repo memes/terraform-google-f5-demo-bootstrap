@@ -9,6 +9,12 @@ updates:
       interval: "weekly"
     reviewers:
       - memes
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - memes
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

@@ -36,3 +36,11 @@ jobs:
         with:
           python-version: '3.12'
       - uses: pre-commit/action@v3.0.1
+  hadolint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          recursive: true

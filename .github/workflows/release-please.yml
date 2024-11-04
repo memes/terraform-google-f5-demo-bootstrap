@@ -14,15 +14,11 @@ permissions:
 
 jobs:
   release-please:
-    # TODO: @memes - enable in real project
-    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Release Please
         uses: GoogleCloudPlatform/release-please-action@v4.1.3
         with:
-          # TODO @memes - make sure release-type and other options are correct.
-          release-type: simple
-          # TODO @memes - If other actions are not going to be triggered by the
-          # result of this action this can be removed.
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}

@@ -38,6 +38,15 @@ jobs:
           images: |
             memes/xc-atlantis
             ghcr.io/${{ github.repository }}/xc-atlantis
+          tags: |
+            type=semver,pattern={{version}},value=${{ steps.release_please.outputs.tag_name }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.release_please.outputs.tag_name }}
+          labels: |
+            maintainer=memes@matthewemes.com
+            org.opencontainers.image.title=xc-atlantis
+            org.opencontainers.image.description=Atlantis container with added tools for F5XC.
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}/tree/${{ github.sha }}/containers/xc-atlantis/
+            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/tree/${{ github.sha }}/containers/xc-atlantis/README.md
       - name: Build and push Docker images
         id: push
         uses: docker/build-push-action@v6

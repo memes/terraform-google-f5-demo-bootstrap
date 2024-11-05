@@ -3,7 +3,7 @@
 ---
 fileignoreconfig:
 - filename: .github/workflows/release.yml
-  checksum: be0228e5e562df984258be058f4b106a48ef1b90e4be7059bc4ffba03563afd3
+  checksum: bfaecf2a23ed1aa94cdfaad159df53bebccecb79967df3a32fdacab0ac2c7884
 - filename: dotenvrc
   checksum: 1a73442a316535a2e8a67a401aef15943f73ab0e405577f6f405e81400a12d57
 - filename: .github/workflows/pre-commit.yml
@@ -11,4 +11,20 @@ fileignoreconfig:
 - filename: README.md
   ignore_detectors:
   - filecontent
+- filename: modules/re-vk8s/atlantis.tf
+  checksum: a84d4cb40201d33b5a2b31c644f77a05df2a33055d414edb66c3ccf24e5bb5f7
+- filename: modules/tfc/variables.tf
+  checksum: dd9ccbee35054a69935c4c054f668230101b728142102a7730244c3fcce5d67e
+- filename: modules/re-vk8s/variables.tf
+  checksum: 7b1c5df0b3e7bdacaade2701f172b6f8b3177dc670ea6ad4c6bf3f52d93114d9
+- filename: variables.tf
+  checksum: c7b2390ef8e2f7ff0b61651032d32395e1071a02f59d8f93879b3293c65355e5
+- filename: modules/tfc/main.tf
+  checksum: 5234af2aa97b4c57af873191dd5c4d598be1238fae1bceaf079ebf71a9f066ea
+- filename: modules/re-vk8s/main.tf
+  checksum: 8b3e0072e4b7964522219197795036ac33b7c99d110ef14cbc687711fb247cb5
+- filename: examples/xc-atlantis/variables.tf
+  checksum: 82a635be593098fffa0d459f7639600fc8e179007582f0c622cfbe19020e70aa
+- filename: main.tf
+  checksum: c0037c7ac921de2884a9b311a07ba96d650ebc7f45df51be317570844881277d
 version: "1.0"

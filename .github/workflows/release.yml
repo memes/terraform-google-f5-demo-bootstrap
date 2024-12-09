@@ -57,13 +57,13 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
       - name: Generate artifact attestation for Docker Hub
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v2
         with:
           subject-name: index.docker.io/memes/xc-atlantis
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
       - name: Generate artifact attestation for GHCR
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v2
         with:
           subject-name: ghcr.io/${{ github.repository }}/xc-atlantis
           subject-digest: ${{ steps.push.outputs.digest }}

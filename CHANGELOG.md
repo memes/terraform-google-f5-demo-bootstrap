@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.1.0...v0.2.0) (2025-01-17)
+
+
+### Features
+
+* Add terraform from private bootstrap repo ([ebfbf4e](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/ebfbf4e3ed8b57188cc818e3b3255769d67c4b80))
+
 ## [0.1.0](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.0.1...v0.1.0) (2024-11-04)
 
 

@@ -11,6 +11,10 @@ Gemfile.lock
 .terraform
 .terraform.lock.hcl
 terraform.tfstate*
+.terraform.tfstate*
 *.auto.tfvars*
 terraform.tfvars*
 !terraform.tfvars.example
+
+# Ignore generated kubeconfigs
+*.kubeconfig

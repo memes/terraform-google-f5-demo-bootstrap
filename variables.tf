@@ -54,6 +54,7 @@ variable "options" {
       rpm      = bool
     })
     repo_description = string
+    repo_name        = string
   })
   nullable = false
   default = {
@@ -72,6 +73,7 @@ variable "options" {
       rpm      = false
     }
     repo_description = "Bootstrapped automation repository"
+    repo_name        = ""
   }
 }
 

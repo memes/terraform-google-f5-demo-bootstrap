@@ -16,10 +16,6 @@ terraform {
   }
 }
 
-data "google_project" "project" {
-  project_id = var.project_id
-}
-
 data "google_storage_project_service_account" "default" {
   project = var.project_id
 }
@@ -92,7 +88,7 @@ resource "google_service_account" "automation" {
 
 # Bind service account to project roles, as needed.
 resource "google_service_account_iam_member" "impersonation" {
-  for_each = { for i, pair in setproduct(var.impersonators, ["roles/iam.serviceAccountTokenCreator", "roles/iam.serviceAccountUser"]) : "${i}" => {
+  for_each = { for i, pair in setproduct(var.impersonators, ["roles/iam.serviceAccountTokenCreator", "roles/iam.serviceAccountUser"]) : tostring(i) => {
     member = pair[0]
     role   = pair[1]
   } }
@@ -263,7 +259,7 @@ resource "google_artifact_registry_repository_iam_member" "automation" {
 
 # Bootstraps a new GitHub repository with the required settings for automation.
 resource "github_repository" "automation" {
-  name        = var.name
+  name        = coalesce(try(var.options.repo_name, ""), var.name)
   description = var.options.repo_description
   visibility  = var.options.private_repo ? "private" : "public"
   dynamic "template" {

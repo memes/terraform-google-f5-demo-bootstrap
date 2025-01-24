@@ -28,10 +28,12 @@ jobs:
         run: |
           sudo sh -c 'curl -sL https://github.com/terraform-docs/terraform-docs/releases/download/v0.19.0/terraform-docs-v0.19.0-linux-amd64.tar.gz | tar xzf - -C /usr/local/bin'
           sudo chmod 0755 /usr/local/bin/terraform-docs
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3.5'
-          bundler-cache: true
+      - name: Install tflint
+        run: |
+          curl -sLO https://github.com/terraform-linters/tflint/releases/download/v0.55.0/tflint_linux_amd64.zip
+          unzip tflint_linux_amd64.zip && rm tflint_linux_amd64.zip
+          sudo mv tflint /usr/local/bin/tflint
+          sudo chmod 0755 /usr/local/bin/tflint
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

@@ -92,6 +92,8 @@ module "vk8s" {
   domain      = format("%s.%s", var.name, var.domain)
 }
 
+# TODO @memes - I think there's a reason this is needed for k8s. Take another look at this sometime.
+# tflint-ignore: terraform_unused_declarations
 data "google_client_openid_userinfo" "provider" {}
 
 data "google_service_account" "bootstrap" {

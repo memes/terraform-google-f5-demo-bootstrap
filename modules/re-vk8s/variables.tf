@@ -109,19 +109,20 @@ variable "domain" {
   EOD
 }
 
-variable "repositories" {
-  type     = list(string)
-  nullable = true
-  validation {
-    condition     = var.repositories == null ? true : length(join("", [for repo in var.repositories : can(regex("^(?:(?:(?:asia|eu|us).)?gcr.io|[a-z]{2,}(?:-[a-z]+[1-9])?-docker.pkg.dev/[^/]+/[^/]+)", repo)) ? "x" : ""])) == length(var.repositories)
-    error_message = "Each repositories entry must be a valid gcr.io or XXX-docker.pkg.dev repository."
-  }
-  default     = []
-  description = <<-EOD
-  An optional list of GCR and/or GAR repositories. If provided, the generated service account will be given the
-  appropriate GCR or GAR read-only access role to the repos.
-  EOD
-}
+# TODO @memes - the code to assign IAM read to repos is missing/in an uncommitted module. Revisit this sometime...
+# variable "repositories" {
+#   type     = list(string)
+#   nullable = true
+#   validation {
+#     condition     = var.repositories == null ? true : length(join("", [for repo in var.repositories : can(regex("^(?:(?:(?:asia|eu|us).)?gcr.io|[a-z]{2,}(?:-[a-z]+[1-9])?-docker.pkg.dev/[^/]+/[^/]+)", repo)) ? "x" : ""])) == length(var.repositories)
+#     error_message = "Each repositories entry must be a valid gcr.io or XXX-docker.pkg.dev repository."
+#   }
+#   default     = []
+#   description = <<-EOD
+#   An optional list of GCR and/or GAR repositories. If provided, the generated service account will be given the
+#   appropriate GCR or GAR read-only access role to the repos.
+#   EOD
+# }
 
 variable "expiration_days" {
   type     = number

@@ -311,7 +311,7 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "attribute.automation_sa"    = "'enabled'"
   }
   # Only allow integration with the bootstrapped repo
-  attribute_condition = format("attribute.repository_owner == '%s' && attribute.repository == '%s'", split("/", github_repository.automation.full_name)...)
+  attribute_condition = format("attribute.repository_owner == '%s' && attribute.repository == '%s'", split("/", github_repository.automation.full_name)[0], github_repository.automation.full_name)
   oidc {
     # TODO @memes - the effect of an empty list is to impose a match against the
     # fully-qualified workload identity pool name. This should be sufficient but

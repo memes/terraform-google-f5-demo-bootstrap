@@ -35,7 +35,7 @@ jobs:
           sudo chmod 0755 /usr/local/bin/terraform-docs
       - name: Install tflint
         run: |
-          curl -fsSLO https://github.com/terraform-linters/tflint/releases/download/v${{ env.TFDOCS_VERSION }}/tflint_linux_amd64.zip
+          curl -fsSLO https://github.com/terraform-linters/tflint/releases/download/v${{ env.TFLINT_VERSION }}/tflint_linux_amd64.zip
           unzip tflint_linux_amd64.zip && rm tflint_linux_amd64.zip
           sudo mv tflint /usr/local/bin/tflint
           sudo chmod 0755 /usr/local/bin/tflint

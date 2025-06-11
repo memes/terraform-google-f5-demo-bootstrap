@@ -37,3 +37,33 @@ variable "bucket_name" {
     An optional GCS bucket that will be used for Cloud Deploy state.
     EOD
 }
+
+variable "options" {
+  type = object({
+    services_disable_on_destroy = bool
+    disable_dependent_services  = bool
+  })
+  nullable = false
+  default = {
+    services_disable_on_destroy = false
+    disable_dependent_services  = false
+  }
+}
+
+
+# tflint-ignore: terraform_unused_declarations
+variable "labels" {
+  type     = map(string)
+  nullable = true
+  validation {
+    # GCP resource labels must be lowercase alphanumeric, underscore or hyphen,
+    # and the key must be <= 63 characters in length
+    condition     = length(compact([for k, v in var.labels : can(regex("^[a-z][a-z0-9_-]{0,62}$", k)) && can(regex("^[a-z0-9_-]{0,63}$", v)) ? "x" : ""])) == length(keys(var.labels))
+    error_message = "Each label key:value pair must match GCP requirements."
+  }
+  default     = {}
+  description = <<-EOD
+  An optional set of key:value string pairs that will be added to GCP resources
+  that accept labels.
+  EOD
+}

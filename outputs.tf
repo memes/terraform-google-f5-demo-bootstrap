@@ -30,10 +30,10 @@ output "sops_kms_id" {
   EOD
 }
 
-output "sa" {
-  value       = google_service_account.automation.email
+output "iac_sa" {
+  value       = google_service_account.iac.email
   description = <<-EOD
-  The fully-qualified email address of the automation service account.
+  The fully-qualified email address of the IaC automation service account.
   EOD
 }
 
@@ -58,7 +58,7 @@ output "ssh_clone_url" {
   EOD
 }
 
-output "deploy_pubkey" {
+output "deploy_public_key" {
   value       = tls_private_key.automation.public_key_openssh
   sensitive   = true
   description = <<-EOD
@@ -66,7 +66,7 @@ output "deploy_pubkey" {
   EOD
 }
 
-output "deploy_privkey" {
+output "deploy_private_key" {
   value       = tls_private_key.automation.private_key_openssh
   sensitive   = true
   description = <<-EOD
@@ -75,7 +75,7 @@ output "deploy_privkey" {
 }
 
 output "workload_identity_pool_id" {
-  value       = google_iam_workload_identity_pool.automation.id
+  value       = google_iam_workload_identity_pool.bots.id
   description = <<-EOD
   The fully-qualified identifier of the created Workload Identity pool.
   EOD

@@ -87,12 +87,12 @@ variable "bootstrap_apis" {
   EOD
 }
 
-variable "automation_roles" {
+variable "iac_roles" {
   type        = set(string)
   nullable    = false
   default     = []
   description = <<-EOD
-  An optional set of IAM roles to assign to the automation service account.
+  An optional set of IAM roles to assign to the IaC automation service account.
   Default is an empty set.
   EOD
 }
@@ -106,7 +106,7 @@ variable "impersonators" {
   }
   default     = []
   description = <<-EOD
-  A list of fully-qualified IAM accounts that will be allowed to impersonate the automation service account. If no
+  A list of fully-qualified IAM accounts that will be allowed to impersonate the IaC automation service account. If no
   accounts are supplied, impersonation will not be setup by the script.
   E.g.
   impersonators = [

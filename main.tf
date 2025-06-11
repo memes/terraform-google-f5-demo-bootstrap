@@ -70,15 +70,13 @@ resource "google_project_service" "apis" {
   disable_dependent_services = var.options.disable_dependent_services
 }
 
-# This creates the main service account that is used by automations; it is
-# analogous to the long-lived Terraform and/or Ansible service accounts I used
-# previously.
-resource "google_service_account" "automation" {
+# This creates the IaC service account that may be used by automation services such as Terraform Cloud, Atlantis or Infra Manager.
+resource "google_service_account" "iac" {
   project      = var.project_id
-  account_id   = format("%s-bot", var.name)
-  display_name = "General purpose automation service account"
+  account_id   = format("%s-iac", var.name)
+  display_name = "IaC automation service account"
   description  = <<-EOD
-  Service account that will be used by various automation providers (GitHub, Terraform, etc) to stand-up Google Cloud resources.
+  Service account that may be used by various automation providers to provision Google Cloud resources.
   EOD
 
   depends_on = [
@@ -86,36 +84,41 @@ resource "google_service_account" "automation" {
   ]
 }
 
-# Bind service account to project roles, as needed.
-resource "google_service_account_iam_member" "impersonation" {
+# Bind service account to impersonators
+resource "google_service_account_iam_member" "iac_impersonation" {
   for_each = { for i, pair in setproduct(var.impersonators, ["roles/iam.serviceAccountTokenCreator", "roles/iam.serviceAccountUser"]) : tostring(i) => {
     member = pair[0]
     role   = pair[1]
   } }
-  service_account_id = google_service_account.automation.name
+  service_account_id = google_service_account.iac.name
   member             = each.value.member
   role               = each.value.role
-}
-
-# Bind the automation service account to the necessary project roles.
-resource "google_project_iam_member" "automation" {
-  for_each = var.automation_roles
-  project  = var.project_id
-  role     = each.key
-  member   = google_service_account.automation.member
 
   depends_on = [
     google_project_service.apis,
-    google_service_account.automation,
+    google_service_account.iac,
+  ]
+}
+
+# Bind the IaC automation service account to the necessary project roles.
+resource "google_project_iam_member" "iac" {
+  for_each = var.iac_roles
+  project  = var.project_id
+  role     = each.key
+  member   = google_service_account.iac.member
+
+  depends_on = [
+    google_project_service.apis,
+    google_service_account.iac,
   ]
 }
 
 # Bootstrap the workload identity pool that is associated with this deployment
 # repo. This allows short lived OIDC tokens to be authenticated and used for
-# invoking APIs as the automation service account.
-resource "google_iam_workload_identity_pool" "automation" {
+# invoking APIs directly.
+resource "google_iam_workload_identity_pool" "bots" {
   project                   = var.project_id
-  workload_identity_pool_id = format("%s-bot", var.name)
+  workload_identity_pool_id = format("%s-bots", var.name)
   display_name              = "Automation pool"
   description               = <<-EOD
   Defines a pool of third-party providers that can exchange tokens for automation actions.
@@ -127,12 +130,11 @@ resource "google_iam_workload_identity_pool" "automation" {
   ]
 }
 
-# Bind the workload identity user role on automation service account for principals
-# that satisfy the condition that their respective provider has the custom
-# 'automation_sa' attribute set to true.
-resource "google_service_account_iam_member" "automation" {
-  service_account_id = google_service_account.automation.name
-  member             = format("principalSet://iam.googleapis.com/%s/attribute.automation_sa/enabled", google_iam_workload_identity_pool.automation.name)
+# Bind the workload identity user role on automation service account for principals that satisfy the condition that their respective provider has the custom
+# 'iac_sa' attribute set to true.
+resource "google_service_account_iam_member" "iac" {
+  service_account_id = google_service_account.iac.name
+  member             = format("principalSet://iam.googleapis.com/%s/attribute.iac_sa/enabled", google_iam_workload_identity_pool.bots.name)
   role               = "roles/iam.workloadIdentityUser"
 }
 
@@ -146,15 +148,15 @@ resource "google_kms_key_ring" "automation" {
   ]
 }
 
-# Allow the automation SA to use any KMS key in the key ring for encryption and decryption
-resource "google_kms_key_ring_iam_member" "automation" {
+# Allow the IaC automation SA to use any KMS key in the key ring for encryption and decryption
+resource "google_kms_key_ring_iam_member" "iac" {
   key_ring_id = google_kms_key_ring.automation.id
   role        = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member      = google_service_account.automation.member
+  member      = google_service_account.iac.member
 
   depends_on = [
     google_project_service.apis,
-    google_service_account.automation,
+    google_service_account.iac,
   ]
 }
 
@@ -162,7 +164,6 @@ resource "google_kms_key_ring_iam_member" "automation" {
 resource "google_kms_crypto_key" "sops" {
   name     = format("%s-sops", var.name)
   key_ring = google_kms_key_ring.automation.id
-  purpose  = "ENCRYPT_DECRYPT"
   labels   = var.labels
 
   depends_on = [
@@ -216,7 +217,7 @@ resource "google_storage_bucket" "state" {
   ]
 }
 
-# Make the automation service account an admin of the bootstrapped bucket.
+# Make the IaC automation service account an admin of the bootstrapped bucket.
 resource "google_storage_bucket_iam_member" "admin" {
   bucket = google_storage_bucket.state.name
   role   = "roles/storage.admin"
@@ -224,11 +225,11 @@ resource "google_storage_bucket_iam_member" "admin" {
 
   depends_on = [
     google_project_service.apis,
-    google_service_account.automation,
+    google_service_account.iac,
   ]
 }
 
-# Create any needed artifact registry for the project, and assign the automation service account as an admin
+# Create any needed artifact registry for the project
 resource "google_artifact_registry_repository" "automation" {
   for_each      = local.ar_repos
   project       = var.project_id
@@ -243,17 +244,48 @@ resource "google_artifact_registry_repository" "automation" {
   ]
 }
 
-resource "google_artifact_registry_repository_iam_member" "automation" {
+# Allow the IaC automation service account read-only access to the repo.
+resource "google_artifact_registry_repository_iam_member" "iac" {
   for_each   = google_artifact_registry_repository.automation
   project    = each.value.project
   location   = each.value.location
   repository = each.value.name
-  role       = "roles/artifactregistry.repoAdmin"
+  role       = "roles/artifactregistry.reader"
   member     = google_service_account.automation.member
 
   depends_on = [
     google_project_service.apis,
-    google_service_account.automation,
+    google_service_account.iac,
+  ]
+}
+
+# Allow OIDC principals with attribute 'artifact_registry="writer"' read-only access to Artifact Registry
+resource "google_artifact_registry_repository_iam_member" "reader" {
+  for_each   = google_artifact_registry_repository.automation
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.name
+  role       = "roles/artifactregistry.reader"
+  member     = format("principalSet://iam.googleapis.com/%s/attribute.artifact_registry/reader", google_iam_workload_identity_pool.bots.name)
+
+  depends_on = [
+    google_project_service.apis,
+    google_iam_workload_identity_pool.bots,
+  ]
+}
+
+# Allow OIDC principals with attribute 'artifact_registry="writer"' push access to Artifact Registry
+resource "google_artifact_registry_repository_iam_member" "writer" {
+  for_each   = google_artifact_registry_repository.automation
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.name
+  role       = "roles/artifactregistry.writer"
+  member     = format("principalSet://iam.googleapis.com/%s/attribute.artifact_registry/writer", google_iam_workload_identity_pool.bots.name)
+
+  depends_on = [
+    google_project_service.apis,
+    google_iam_workload_identity_pool.bots,
   ]
 }
 
@@ -303,12 +335,12 @@ resource "google_iam_workload_identity_pool_provider" "github" {
   Defines an OIDC provider that authenticates a GitHub token as a valid automation user.
   EOD
   attribute_mapping = {
-    "attribute.actor"            = "assertion.actor"
-    "attribute.aud"              = "assertion.aud"
-    "attribute.repository"       = "assertion.repository"
-    "attribute.repository_owner" = "assertion.repository_owner"
-    "google.subject"             = "assertion.sub"
-    "attribute.automation_sa"    = "'enabled'"
+    "attribute.actor"             = "assertion.actor"
+    "attribute.aud"               = "assertion.aud"
+    "attribute.repository"        = "assertion.repository"
+    "attribute.repository_owner"  = "assertion.repository_owner"
+    "google.subject"              = "assertion.sub"
+    "attribute.artifact_registry" = "'writer'"
   }
   # Only allow integration with the bootstrapped repo
   attribute_condition = format("attribute.repository_owner == '%s' && attribute.repository == '%s'", split("/", github_repository.automation.full_name)[0], github_repository.automation.full_name)
@@ -328,17 +360,6 @@ resource "github_actions_secret" "provider_id" {
   repository      = github_repository.automation.name
   secret_name     = "WORKLOAD_IDENTITY_PROVIDER_ID"
   plaintext_value = google_iam_workload_identity_pool_provider.github.name
-}
-
-resource "github_actions_secret" "automation_sa" {
-  repository      = github_repository.automation.name
-  secret_name     = "SERVICE_ACCOUNT"
-  plaintext_value = google_service_account.automation.email
-
-  depends_on = [
-    google_project_service.apis,
-    google_service_account.automation,
-  ]
 }
 
 resource "github_actions_variable" "registry" {

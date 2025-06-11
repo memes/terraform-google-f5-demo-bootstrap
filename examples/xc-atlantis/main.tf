@@ -71,9 +71,9 @@ module "bootstrap" {
   collaborators = [
     var.github.user,
   ]
-  bootstrap_apis   = var.bootstrap_apis
-  automation_roles = var.automation_roles
-  impersonators    = var.impersonators
+  bootstrap_apis = var.bootstrap_apis
+  iac_roles      = var.iac_roles
+  impersonators  = var.impersonators
 }
 
 module "vk8s" {

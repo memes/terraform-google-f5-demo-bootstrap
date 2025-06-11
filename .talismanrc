@@ -26,5 +26,5 @@ fileignoreconfig:
 - filename: examples/xc-atlantis/variables.tf
   checksum: 82a635be593098fffa0d459f7639600fc8e179007582f0c622cfbe19020e70aa
 - filename: main.tf
-  checksum: c0037c7ac921de2884a9b311a07ba96d650ebc7f45df51be317570844881277d
+  checksum: b2ee33dfd1f24d1d9c5b993fc80d78c4a8760ec4f8c720c7ab57b5d373c0710d
 version: "1.0"

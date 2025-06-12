@@ -378,7 +378,7 @@ resource "github_actions_secret" "iac_sa" {
   ]
 }
 
-resource "github_action_variable" "project_id" {
+resource "github_actions_variable" "project_id" {
   repository    = github_repository.automation.name
   variable_name = "PROJECT_ID"
   value         = var.project_id

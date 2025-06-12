@@ -378,6 +378,12 @@ resource "github_actions_secret" "iac_sa" {
   ]
 }
 
+resource "github_action_variable" "project_id" {
+  repository    = github_repository.automation.name
+  variable_name = "PROJECT_ID"
+  value         = var.project_id
+}
+
 resource "github_actions_variable" "registry" {
   for_each      = { for k, v in google_artifact_registry_repository.automation : format("%s_REGISTRY", upper(k)) => local.ar_repos[k].identifier }
   repository    = github_repository.automation.name

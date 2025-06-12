@@ -37,6 +37,13 @@ output "iac_sa" {
   EOD
 }
 
+output "ar_sa" {
+  value       = google_service_account.ar.email
+  description = <<-EOD
+  The fully-qualified email address of the Artifact Registry automation service account.
+  EOD
+}
+
 output "html_url" {
   value       = github_repository.automation.html_url
   description = <<-EOD

@@ -25,6 +25,7 @@ No modules.
 
 | Name | Type |
 |------|------|
+| [github_actions_secret.ar_sa](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_secret) | resource |
 | [github_actions_secret.iac_sa](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_secret) | resource |
 | [github_actions_secret.provider_id](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_secret) | resource |
 | [github_actions_variable.project_id](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_variable) | resource |
@@ -33,6 +34,7 @@ No modules.
 | [github_repository_collaborator.collaborators](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_collaborator) | resource |
 | [github_repository_deploy_key.automation](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_deploy_key) | resource |
 | [google_artifact_registry_repository.automation](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/artifact_registry_repository) | resource |
+| [google_artifact_registry_repository_iam_member.ar](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/artifact_registry_repository_iam_member) | resource |
 | [google_artifact_registry_repository_iam_member.iac](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/artifact_registry_repository_iam_member) | resource |
 | [google_artifact_registry_repository_iam_member.reader](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/artifact_registry_repository_iam_member) | resource |
 | [google_artifact_registry_repository_iam_member.writer](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/artifact_registry_repository_iam_member) | resource |
@@ -45,7 +47,9 @@ No modules.
 | [google_kms_key_ring_iam_member.iac](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/kms_key_ring_iam_member) | resource |
 | [google_project_iam_member.iac](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/project_iam_member) | resource |
 | [google_project_service.apis](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/project_service) | resource |
+| [google_service_account.ar](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/service_account) | resource |
 | [google_service_account.iac](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/service_account) | resource |
+| [google_service_account_iam_member.ar](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/service_account_iam_member) | resource |
 | [google_service_account_iam_member.iac](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/service_account_iam_member) | resource |
 | [google_service_account_iam_member.iac_impersonation](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/service_account_iam_member) | resource |
 | [google_storage_bucket.state](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket) | resource |
@@ -71,6 +75,7 @@ No modules.
 
 | Name | Description |
 |------|-------------|
+| <a name="output_ar_sa"></a> [ar\_sa](#output\_ar\_sa) | The fully-qualified email address of the Artifact Registry automation service account. |
 | <a name="output_deploy_private_key"></a> [deploy\_private\_key](#output\_deploy\_private\_key) | The private deploy key. |
 | <a name="output_deploy_public_key"></a> [deploy\_public\_key](#output\_deploy\_public\_key) | The public deploy key. |
 | <a name="output_github_repo"></a> [github\_repo](#output\_github\_repo) | The full name of the repository. |

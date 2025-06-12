@@ -289,6 +289,50 @@ resource "google_artifact_registry_repository_iam_member" "writer" {
   ]
 }
 
+# This creates the service account that may be used by CI services that need to write to registry.
+resource "google_service_account" "ar" {
+  project      = var.project_id
+  account_id   = format("%s-ar", var.name)
+  display_name = "Artifact Registry automation service account"
+  description  = <<-EOD
+  Service account that may be used by various automation providers that need to write to Artifact Registry.
+  EOD
+
+  depends_on = [
+    google_project_service.apis,
+  ]
+}
+
+# Bind the workload identity user role on Artifact Registry service account for principals that satisfy the condition that their respective provider has the
+# custom 'ar_sa' attribute set to true.
+resource "google_service_account_iam_member" "ar" {
+  service_account_id = google_service_account.ar.name
+  member             = format("principalSet://iam.googleapis.com/%s/attribute.ar_sa/enabled", google_iam_workload_identity_pool.bots.name)
+  role               = "roles/iam.workloadIdentityUser"
+
+  depends_on = [
+    google_project_service.apis,
+    google_service_account.ar,
+    google_iam_workload_identity_pool.bots,
+  ]
+}
+
+# Allow OIDC principals with attribute 'artifact_registry="writer"' push access to Artifact Registry
+resource "google_artifact_registry_repository_iam_member" "ar" {
+  for_each   = google_artifact_registry_repository.automation
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.name
+  role       = "roles/artifactregistry.writer"
+  member     = google_service_account.ar.member
+
+  depends_on = [
+    google_project_service.apis,
+    google_service_account.ar,
+    google_iam_workload_identity_pool.bots,
+  ]
+}
+
 # Bootstraps a new GitHub repository with the required settings for automation.
 resource "github_repository" "automation" {
   name        = coalesce(try(var.github_options.name, ""), var.name)
@@ -340,12 +384,12 @@ resource "google_iam_workload_identity_pool_provider" "github" {
   Defines an OIDC provider that authenticates a GitHub token as a valid automation user.
   EOD
   attribute_mapping = {
-    "attribute.actor"             = "assertion.actor"
-    "attribute.aud"               = "assertion.aud"
-    "attribute.repository"        = "assertion.repository"
-    "attribute.repository_owner"  = "assertion.repository_owner"
-    "google.subject"              = "assertion.sub"
-    "attribute.artifact_registry" = "'writer'"
+    "attribute.actor"            = "assertion.actor"
+    "attribute.aud"              = "assertion.aud"
+    "attribute.repository"       = "assertion.repository"
+    "attribute.repository_owner" = "assertion.repository_owner"
+    "google.subject"             = "assertion.sub"
+    "attribute.ar_sa"            = "'enabled'"
   }
   # Only allow integration with the bootstrapped repo
   attribute_condition = format("attribute.repository_owner == '%s' && attribute.repository == '%s'", split("/", github_repository.automation.full_name)[0], github_repository.automation.full_name)
@@ -368,6 +412,18 @@ resource "github_actions_secret" "provider_id" {
 }
 
 resource "github_actions_secret" "iac_sa" {
+  repository      = github_repository.automation.name
+  secret_name     = "IAC_SERVICE_ACCOUNT"
+  plaintext_value = google_service_account.iac.email
+
+  depends_on = [
+    google_project_service.apis,
+    google_service_account.iac,
+  ]
+}
+
+resource "github_actions_secret" "ar_sa" {
+  for_each        = { for k, v in google_artifact_registry_repository.automation : format("%s_REGISTRY", upper(k)) => local.ar_repos[k].identifier }
   repository      = github_repository.automation.name
   secret_name     = "IAC_SERVICE_ACCOUNT"
   plaintext_value = google_service_account.iac.email

@@ -26,7 +26,7 @@ fileignoreconfig:
 - filename: examples/xc-atlantis/variables.tf
   checksum: 82a635be593098fffa0d459f7639600fc8e179007582f0c622cfbe19020e70aa
 - filename: main.tf
-  checksum: 68d9b94196391dd44316544de6ee7e7003f91c587519079aa74f112242441774
+  checksum: 7869526b638da33895b8d8e562d260d1fae74a566920e888a99a5df89317ccab
 - filename: modules/cloud-deploy/variables.tf
   checksum: e74127e6ddd94ea70a7d7a9068766f6dc81ba5af63d403033331aaf8d18b1b1d
 version: "1.0"

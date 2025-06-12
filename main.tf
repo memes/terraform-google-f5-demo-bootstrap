@@ -423,14 +423,13 @@ resource "github_actions_secret" "iac_sa" {
 }
 
 resource "github_actions_secret" "ar_sa" {
-  for_each        = { for k, v in google_artifact_registry_repository.automation : format("%s_REGISTRY", upper(k)) => local.ar_repos[k].identifier }
   repository      = github_repository.automation.name
-  secret_name     = "IAC_SERVICE_ACCOUNT"
-  plaintext_value = google_service_account.iac.email
+  secret_name     = "AR_SERVICE_ACCOUNT"
+  plaintext_value = google_service_account.ar.email
 
   depends_on = [
     google_project_service.apis,
-    google_service_account.iac,
+    google_service_account.ar,
   ]
 }
 

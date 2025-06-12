@@ -22,31 +22,31 @@ data "google_storage_project_service_account" "default" {
 
 locals {
   ar_repos = merge(
-    try(var.options.ar.oci, true) ? {
+    try(var.gcp_options.ar.oci, true) ? {
       oci = {
         name        = format("%s-oci", var.name)
         format      = "DOCKER"
         description = format("OCI registry for %s", var.name)
-        location    = try(var.options.ar.location, "us")
-        identifier  = format("%s-docker.pkg.dev/%s/%s-oci", try(var.options.ar.location, "us"), var.project_id, var.name)
+        location    = try(var.gcp_options.ar.location, "us")
+        identifier  = format("%s-docker.pkg.dev/%s/%s-oci", try(var.gcp_options.ar.location, "us"), var.project_id, var.name)
       }
     } : {},
-    try(var.options.ar.deb, false) ? {
+    try(var.gcp_options.ar.deb, false) ? {
       deb = {
         name        = format("%s-deb", var.name)
         format      = "APT"
         description = format("deb package registry for %s", var.name)
-        location    = try(var.options.ar.location, "us")
-        identifier  = format("ar+https://%s-apt.pkg.dev/projects/%s %s-deb main", try(var.options.ar.location, "us"), var.project_id, var.name)
+        location    = try(var.gcp_options.ar.location, "us")
+        identifier  = format("ar+https://%s-apt.pkg.dev/projects/%s %s-deb main", try(var.gcp_options.ar.location, "us"), var.project_id, var.name)
       }
     } : {},
-    try(var.options.ar.rpm, false) ? {
+    try(var.gcp_options.ar.rpm, false) ? {
       rpm = {
         name        = format("%s-rpm", var.name)
         format      = "YUM"
         description = format("rpm package registry for %s", var.name)
-        location    = try(var.options.ar.location, "us")
-        identifier  = format("https://%s-yum.pkg.dev/projects/%s/%s-rpm", try(var.options.ar.location, "us"), var.project_id, var.name)
+        location    = try(var.gcp_options.ar.location, "us")
+        identifier  = format("https://%s-yum.pkg.dev/projects/%s/%s-rpm", try(var.gcp_options.ar.location, "us"), var.project_id, var.name)
       }
     } : {},
   )
@@ -66,8 +66,8 @@ resource "google_project_service" "apis" {
   ], var.bootstrap_apis) : api => true }
   project                    = var.project_id
   service                    = each.key
-  disable_on_destroy         = var.options.services_disable_on_destroy
-  disable_dependent_services = var.options.disable_dependent_services
+  disable_on_destroy         = var.gcp_options.services_disable_on_destroy
+  disable_dependent_services = var.gcp_options.disable_dependent_services
 }
 
 # This creates the IaC service account that may be used by automation services such as Terraform Cloud, Atlantis or Infra Manager.
@@ -142,7 +142,7 @@ resource "google_service_account_iam_member" "iac" {
 resource "google_kms_key_ring" "automation" {
   project  = var.project_id
   name     = format("%s-automation", var.name)
-  location = try(lower(var.options.bucket_location), "global")
+  location = try(lower(var.gcp_options.bucket.location), "global")
   depends_on = [
     google_project_service.apis,
   ]
@@ -198,14 +198,14 @@ resource "google_kms_crypto_key_iam_member" "gcs" {
 resource "google_storage_bucket" "state" {
   project                     = var.project_id
   name                        = format("%s-automation", var.name)
-  force_destroy               = try(var.options.bucket_force_destroy, true)
+  force_destroy               = try(var.gcp_options.bucket.force_destroy, true)
   labels                      = var.labels
-  location                    = try(var.options.bucket_location, "US")
-  storage_class               = try(var.options.bucket_class, "STANDARD")
-  uniform_bucket_level_access = try(var.options.bucket_uniform_access, true)
+  location                    = try(var.gcp_options.bucket.location, "US")
+  storage_class               = try(var.gcp_options.bucket.class, "STANDARD")
+  uniform_bucket_level_access = try(var.gcp_options.bucket.uniform_access, true)
   public_access_prevention    = "enforced"
   versioning {
-    enabled = try(var.options.bucket_versioning, false)
+    enabled = try(var.gcp_options.bucket.versioning, false)
   }
   encryption {
     default_kms_key_name = google_kms_crypto_key.gcs.id
@@ -235,7 +235,7 @@ resource "google_artifact_registry_repository" "automation" {
   project       = var.project_id
   repository_id = each.value.name
   format        = each.value.format
-  location      = try(var.options.ar.location, "us")
+  location      = try(var.gcp_options.ar.location, "us")
   description   = each.value.description
   labels        = var.labels
 
@@ -291,16 +291,21 @@ resource "google_artifact_registry_repository_iam_member" "writer" {
 
 # Bootstraps a new GitHub repository with the required settings for automation.
 resource "github_repository" "automation" {
-  name        = coalesce(try(var.options.repo_name, ""), var.name)
-  description = var.options.repo_description
-  visibility  = var.options.private_repo ? "private" : "public"
+  name        = coalesce(try(var.github_options.name, ""), var.name)
+  description = var.github_options.description
+  visibility  = try(var.github_options.private_repo, false) ? "private" : "public"
   dynamic "template" {
-    for_each = var.template_repo == null ? {} : { template = var.template_repo }
+    for_each = coalesce(try(var.github_options.template, ""), "unspecified") == "unspecified" ? {} : { template = { owner = reverse(split("/", var.github_options.template))[1], name = reverse(split("/", var.github_options.template))[0] } }
     content {
       owner                = template.value.owner
       repository           = template.value.repo
       include_all_branches = false
     }
+  }
+
+  # Prevent deletion of the repo during post-demo cleanup
+  lifecycle {
+    prevent_destroy = true
   }
 }
 

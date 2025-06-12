@@ -367,6 +367,17 @@ resource "github_actions_secret" "provider_id" {
   plaintext_value = google_iam_workload_identity_pool_provider.github.name
 }
 
+resource "github_actions_secret" "iac_sa" {
+  repository      = github_repository.automation.name
+  secret_name     = "IAC_SERVICE_ACCOUNT"
+  plaintext_value = google_service_account.iac.email
+
+  depends_on = [
+    google_project_service.apis,
+    google_service_account.iac,
+  ]
+}
+
 resource "github_actions_variable" "registry" {
   for_each      = { for k, v in google_artifact_registry_repository.automation : format("%s_REGISTRY", upper(k)) => local.ar_repos[k].identifier }
   repository    = github_repository.automation.name

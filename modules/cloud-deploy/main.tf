@@ -9,6 +9,10 @@ terraform {
       source  = "hashicorp/google"
       version = ">= 6.9"
     }
+    google-beta = {
+      source  = "hashicorp/google"
+      version = ">= 6.9"
+    }
   }
 }
 
@@ -29,8 +33,9 @@ resource "google_project_service" "apis" {
 
 # Ensure the Cloud Build service identity is known
 resource "google_project_service_identity" "build" {
-  project = var.project_id
-  service = "cloudbuild.googleapis.com"
+  provider = google-beta
+  project  = var.project_id
+  service  = "cloudbuild.googleapis.com"
 
   depends_on = [
     google_project_service.apis,
@@ -39,8 +44,9 @@ resource "google_project_service_identity" "build" {
 
 # Ensure the Cloud Deploy service identity is known
 resource "google_project_service_identity" "deploy" {
-  project = var.project_id
-  service = "clouddeploy.googleapis.com"
+  provider = google-beta
+  project  = var.project_id
+  service  = "clouddeploy.googleapis.com"
 
   depends_on = [
     google_project_service.apis,
@@ -59,7 +65,6 @@ resource "google_service_account" "sa" {
 
   depends_on = [
     google_project_service.apis,
-    google_project_service_identity.sa,
   ]
 }
 

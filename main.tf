@@ -221,7 +221,7 @@ resource "google_storage_bucket" "state" {
 resource "google_storage_bucket_iam_member" "admin" {
   bucket = google_storage_bucket.state.name
   role   = "roles/storage.admin"
-  member = google_service_account.automation.member
+  member = google_service_account.iac.member
 
   depends_on = [
     google_project_service.apis,
@@ -251,7 +251,7 @@ resource "google_artifact_registry_repository_iam_member" "iac" {
   location   = each.value.location
   repository = each.value.name
   role       = "roles/artifactregistry.reader"
-  member     = google_service_account.automation.member
+  member     = google_service_account.iac.member
 
   depends_on = [
     google_project_service.apis,
@@ -328,7 +328,7 @@ resource "github_repository_deploy_key" "automation" {
 # Bind the new repo as an OIDC provider for automation.
 resource "google_iam_workload_identity_pool_provider" "github" {
   project                            = var.project_id
-  workload_identity_pool_id          = google_iam_workload_identity_pool.automation.workload_identity_pool_id
+  workload_identity_pool_id          = google_iam_workload_identity_pool.bots.workload_identity_pool_id
   workload_identity_pool_provider_id = format("%s-gh", var.name)
   display_name                       = "GitHub OIDC provider"
   description                        = <<-EOD

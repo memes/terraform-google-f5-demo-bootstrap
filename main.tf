@@ -359,6 +359,11 @@ resource "github_repository_collaborator" "collaborators" {
   repository = github_repository.automation.name
   permission = "push"
   username   = each.value
+
+  # Prevent deletion of the repo during post-demo cleanup
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Create a deploy key

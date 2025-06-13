@@ -138,6 +138,17 @@ resource "google_service_account_iam_member" "iac" {
   role               = "roles/iam.workloadIdentityUser"
 }
 
+# Allow OIDC identities with the custom attribute infra_manager = 'enabled' to manage Infrastructure Manager configs.
+resource "google_project_iam_member" "infra_manager" {
+  project = var.project_id
+  member  = format("principalSet://iam.googleapis.com/%s/attribute.infra_manager/enabled", google_iam_workload_identity_pool.bots.name)
+  role    = "roles/config.admin"
+
+  depends_on = [
+    google_iam_workload_identity_pool.bots,
+  ]
+}
+
 # Create a KMS key ring for use by automation modules
 resource "google_kms_key_ring" "automation" {
   project  = var.project_id
@@ -395,6 +406,7 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "attribute.repository_owner" = "assertion.repository_owner"
     "google.subject"             = "assertion.sub"
     "attribute.ar_sa"            = "'enabled'"
+    "attribute.infra_manager"    = "'enabled'"
   }
   # Only allow integration with the bootstrapped repo
   attribute_condition = format("attribute.repository_owner == '%s' && attribute.repository == '%s'", split("/", github_repository.automation.full_name)[0], github_repository.automation.full_name)

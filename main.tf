@@ -244,13 +244,13 @@ resource "google_artifact_registry_repository" "automation" {
   ]
 }
 
-# Allow the IaC automation service account read-only access to the repo.
+# Allow the IaC automation service account admin access to the repos.
 resource "google_artifact_registry_repository_iam_member" "iac" {
   for_each   = google_artifact_registry_repository.automation
   project    = each.value.project
   location   = each.value.location
   repository = each.value.name
-  role       = "roles/artifactregistry.reader"
+  role       = "roles/artifactregistry.admin"
   member     = google_service_account.iac.member
 
   depends_on = [

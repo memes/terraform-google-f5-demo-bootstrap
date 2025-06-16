@@ -149,6 +149,19 @@ resource "google_project_iam_member" "infra_manager" {
   ]
 }
 
+# Allow OIDC identities with the custom attribute infra_manager = 'enabled' to act as IaC service account.
+resource "google_service_account_iam_member" "iac_infra_manager" {
+  service_account_id = google_service_account.iac.name
+  member             = format("principalSet://iam.googleapis.com/%s/attribute.infra_manager/enabled", google_iam_workload_identity_pool.bots.name)
+  role               = "roles/iam.serviceAccountUser"
+
+  depends_on = [
+    google_project_service.apis,
+    google_service_account.iac,
+    google_iam_workload_identity_pool.bots,
+  ]
+}
+
 # Create a KMS key ring for use by automation modules
 resource "google_kms_key_ring" "automation" {
   project  = var.project_id

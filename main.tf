@@ -218,38 +218,6 @@ resource "google_service_account_iam_member" "iac_infra_manager" {
   ]
 }
 
-# Bind the workload identity user role on automation service account for principals that satisfy the condition that their respective provider has the custom
-# 'iac_sa' attribute set to true.
-resource "google_service_account_iam_member" "iac" {
-  service_account_id = google_service_account.iac.name
-  member             = format("principalSet://iam.googleapis.com/%s/attribute.iac_sa/enabled", google_iam_workload_identity_pool.bots.name)
-  role               = "roles/iam.workloadIdentityUser"
-}
-
-# Allow OIDC identities with the custom attribute infra_manager = 'enabled' to manage Infrastructure Manager configs.
-resource "google_project_iam_member" "infra_manager" {
-  project = var.project_id
-  member  = format("principalSet://iam.googleapis.com/%s/attribute.infra_manager/enabled", google_iam_workload_identity_pool.bots.name)
-  role    = "roles/config.admin"
-
-  depends_on = [
-    google_iam_workload_identity_pool.bots,
-  ]
-}
-
-# Allow OIDC identities with the custom attribute infra_manager = 'enabled' to act as IaC service account.
-resource "google_service_account_iam_member" "iac_infra_manager" {
-  service_account_id = google_service_account.iac.name
-  member             = format("principalSet://iam.googleapis.com/%s/attribute.infra_manager/enabled", google_iam_workload_identity_pool.bots.name)
-  role               = "roles/iam.serviceAccountUser"
-
-  depends_on = [
-    google_project_service.apis,
-    google_service_account.iac,
-    google_iam_workload_identity_pool.bots,
-  ]
-}
-
 # Bind the workload identity user role on Cloud Deploy execution service account for principals that satisfy the
 # condition that their respective provider has the custom 'deploy_sa' attribute set to true.
 resource "google_service_account_iam_member" "deploy" {

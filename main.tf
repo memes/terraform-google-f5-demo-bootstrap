@@ -230,7 +230,7 @@ resource "google_service_account_iam_member" "deploy" {
 resource "google_project_iam_member" "cloud_deploy" {
   project = var.project_id
   member  = format("principalSet://iam.googleapis.com/%s/attribute.cloud_deploy/enabled", google_iam_workload_identity_pool.bots.name)
-  role    = "clouddeploy.releaser"
+  role    = "roles/clouddeploy.releaser"
 
   depends_on = [
     google_iam_workload_identity_pool.bots,

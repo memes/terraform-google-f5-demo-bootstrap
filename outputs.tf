@@ -94,3 +94,10 @@ output "github_repo" {
   The full name of the repository.
   EOD
 }
+
+output "deploy_sa" {
+  value       = google_service_account.deploy.email
+  description = <<-EOD
+  The fully-qualified email address of the Cloud Deploy execution service account.
+  EOD
+}

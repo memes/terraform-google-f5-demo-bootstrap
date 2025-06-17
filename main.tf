@@ -9,6 +9,10 @@ terraform {
       source  = "hashicorp/google"
       version = ">= 6.9"
     }
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = ">= 6.9"
+    }
     tls = {
       source  = "hashicorp/tls"
       version = ">= 4.0"
@@ -57,6 +61,8 @@ locals {
 resource "google_project_service" "apis" {
   for_each = { for api in setunion([
     "artifactregistry.googleapis.com",
+    "cloudbuild.googleapis.com",
+    "clouddeploy.googleapis.com",
     "cloudkms.googleapis.com",
     "containerscanning.googleapis.com",
     "iam.googleapis.com",
@@ -113,6 +119,56 @@ resource "google_project_iam_member" "iac" {
   ]
 }
 
+# Ensure the Cloud Build service identity is known
+resource "google_project_service_identity" "build" {
+  provider = google-beta
+  project  = var.project_id
+  service  = "cloudbuild.googleapis.com"
+
+  depends_on = [
+    google_project_service.apis,
+  ]
+}
+
+# Ensure the Cloud Deploy service identity is known
+resource "google_project_service_identity" "deploy" {
+  provider = google-beta
+  project  = var.project_id
+  service  = "clouddeploy.googleapis.com"
+
+  depends_on = [
+    google_project_service.apis,
+  ]
+}
+
+# This creates the Cloud Deploy execution service account, which can also be used as the Cloud Deploy automation service
+# account.
+resource "google_service_account" "deploy" {
+  project      = var.project_id
+  account_id   = format("%s-deploy", var.name)
+  display_name = "Cloud Deploy execution service account"
+  description  = <<-EOD
+  Cloud Deploy execution service account that will be used for pipelines associated with this repo.
+  EOD
+
+  depends_on = [
+    google_project_service.apis,
+  ]
+}
+
+# Bind the Cloud Deploy execution service account to job runner role at the project level, which includes access to
+# buckets in the project.
+resource "google_project_iam_member" "sa" {
+  project = var.project_id
+  role    = "roles/clouddeploy.jobRunner"
+  member  = google_service_account.deploy.member
+
+  depends_on = [
+    google_project_service.apis,
+    google_service_account.deploy,
+  ]
+}
+
 # Bootstrap the workload identity pool that is associated with this deployment
 # repo. This allows short lived OIDC tokens to be authenticated and used for
 # invoking APIs directly.
@@ -158,6 +214,70 @@ resource "google_service_account_iam_member" "iac_infra_manager" {
   depends_on = [
     google_project_service.apis,
     google_service_account.iac,
+    google_iam_workload_identity_pool.bots,
+  ]
+}
+
+# Bind the workload identity user role on automation service account for principals that satisfy the condition that their respective provider has the custom
+# 'iac_sa' attribute set to true.
+resource "google_service_account_iam_member" "iac" {
+  service_account_id = google_service_account.iac.name
+  member             = format("principalSet://iam.googleapis.com/%s/attribute.iac_sa/enabled", google_iam_workload_identity_pool.bots.name)
+  role               = "roles/iam.workloadIdentityUser"
+}
+
+# Allow OIDC identities with the custom attribute infra_manager = 'enabled' to manage Infrastructure Manager configs.
+resource "google_project_iam_member" "infra_manager" {
+  project = var.project_id
+  member  = format("principalSet://iam.googleapis.com/%s/attribute.infra_manager/enabled", google_iam_workload_identity_pool.bots.name)
+  role    = "roles/config.admin"
+
+  depends_on = [
+    google_iam_workload_identity_pool.bots,
+  ]
+}
+
+# Allow OIDC identities with the custom attribute infra_manager = 'enabled' to act as IaC service account.
+resource "google_service_account_iam_member" "iac_infra_manager" {
+  service_account_id = google_service_account.iac.name
+  member             = format("principalSet://iam.googleapis.com/%s/attribute.infra_manager/enabled", google_iam_workload_identity_pool.bots.name)
+  role               = "roles/iam.serviceAccountUser"
+
+  depends_on = [
+    google_project_service.apis,
+    google_service_account.iac,
+    google_iam_workload_identity_pool.bots,
+  ]
+}
+
+# Bind the workload identity user role on Cloud Deploy execution service account for principals that satisfy the
+# condition that their respective provider has the custom 'deploy_sa' attribute set to true.
+resource "google_service_account_iam_member" "deploy" {
+  service_account_id = google_service_account.deploy.name
+  member             = format("principalSet://iam.googleapis.com/%s/attribute.deploy_sa/enabled", google_iam_workload_identity_pool.bots.name)
+  role               = "roles/iam.workloadIdentityUser"
+}
+
+# Allow OIDC identities with the custom attribute cloud_deploy = 'enabled' to release deployments.
+resource "google_project_iam_member" "cloud_deploy" {
+  project = var.project_id
+  member  = format("principalSet://iam.googleapis.com/%s/attribute.cloud_deploy/enabled", google_iam_workload_identity_pool.bots.name)
+  role    = "clouddeploy.releaser"
+
+  depends_on = [
+    google_iam_workload_identity_pool.bots,
+  ]
+}
+
+# Allow OIDC identities with the custom attribute cloud_deploy = 'enabled' to act as Cloud Deploy execution service account.
+resource "google_service_account_iam_member" "deploy_cloud_deploy" {
+  service_account_id = google_service_account.deploy.name
+  member             = format("principalSet://iam.googleapis.com/%s/attribute.cloud_deploy/enabled", google_iam_workload_identity_pool.bots.name)
+  role               = "roles/iam.serviceAccountUser"
+
+  depends_on = [
+    google_project_service.apis,
+    google_service_account.deploy,
     google_iam_workload_identity_pool.bots,
   ]
 }
@@ -250,6 +370,19 @@ resource "google_storage_bucket_iam_member" "admin" {
   depends_on = [
     google_project_service.apis,
     google_service_account.iac,
+  ]
+}
+
+# Ensure the Cloud Deploy execution service account can view and create objects in the bootstrapped bucket.
+resource "google_storage_bucket_iam_member" "deploy" {
+  for_each = { for role in ["roles/storage.objectViewer", "roles/storage.objectCreator"] : role => true }
+  bucket   = google_storage_bucket.state.name
+  role     = each.key
+  member   = google_service_account.deploy.member
+
+  depends_on = [
+    google_project_service.apis,
+    google_service_account.deploy,
   ]
 }
 
@@ -420,6 +553,7 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "google.subject"             = "assertion.sub"
     "attribute.ar_sa"            = "'enabled'"
     "attribute.infra_manager"    = "'enabled'"
+    "attribute.cloud_deploy"     = "'enabled'"
   }
   # Only allow integration with the bootstrapped repo
   attribute_condition = format("attribute.repository_owner == '%s' && attribute.repository == '%s'", split("/", github_repository.automation.full_name)[0], github_repository.automation.full_name)
@@ -456,6 +590,17 @@ resource "github_actions_secret" "ar_sa" {
   repository      = github_repository.automation.name
   secret_name     = "AR_SERVICE_ACCOUNT"
   plaintext_value = google_service_account.ar.email
+
+  depends_on = [
+    google_project_service.apis,
+    google_service_account.ar,
+  ]
+}
+
+resource "github_actions_secret" "deploy_sa" {
+  repository      = github_repository.automation.name
+  secret_name     = "DEPLOY_SERVICE_ACCOUNT"
+  plaintext_value = google_service_account.deploy.email
 
   depends_on = [
     google_project_service.apis,

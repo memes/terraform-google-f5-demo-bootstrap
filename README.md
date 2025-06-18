@@ -89,7 +89,7 @@ No modules.
 | <a name="output_ar_sa"></a> [ar\_sa](#output\_ar\_sa) | The fully-qualified email address of the Artifact Registry automation service account. |
 | <a name="output_deploy_private_key"></a> [deploy\_private\_key](#output\_deploy\_private\_key) | The private deploy key. |
 | <a name="output_deploy_public_key"></a> [deploy\_public\_key](#output\_deploy\_public\_key) | The public deploy key. |
-| <a name="output_deploy_sa"></a> [deploy\_sa](#output\_deploy\_sa) | The fully-qualified email address of the Cloud Deploy execution service account. |
+| <a name="output_deploy_sa"></a> [deploy\_sa](#output\_deploy\_sa) | The fully-qualified email address of the Cloud Deploy execution service account, if enabled. |
 | <a name="output_github_repo"></a> [github\_repo](#output\_github\_repo) | The full name of the repository. |
 | <a name="output_html_url"></a> [html\_url](#output\_html\_url) | The URL to the GitHub repository created for this project. |
 | <a name="output_http_clone_url"></a> [http\_clone\_url](#output\_http\_clone\_url) | The repo's clone over HTTPS URL. |

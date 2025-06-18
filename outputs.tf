@@ -96,8 +96,8 @@ output "github_repo" {
 }
 
 output "deploy_sa" {
-  value       = google_service_account.deploy.email
+  value       = one([for sa in google_service_account.deploy : sa.email])
   description = <<-EOD
-  The fully-qualified email address of the Cloud Deploy execution service account.
+  The fully-qualified email address of the Cloud Deploy execution service account, if enabled.
   EOD
 }

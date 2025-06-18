@@ -259,7 +259,8 @@ resource "google_project_iam_member" "cloud_deploy" {
 
 # Allow OIDC identities with the custom attribute cloud_deploy = 'enabled' to act as Cloud Deploy execution service account.
 resource "google_service_account_iam_member" "deploy_cloud_deploy" {
-  service_account_id = google_service_account.deploy.name
+  for_each           = google_service_account.deploy
+  service_account_id = each.value.name
   member             = format("principalSet://iam.googleapis.com/%s/attribute.cloud_deploy/enabled", google_iam_workload_identity_pool.bots.name)
   role               = "roles/iam.serviceAccountUser"
 
@@ -589,13 +590,14 @@ resource "github_actions_secret" "ar_sa" {
 }
 
 resource "github_actions_secret" "deploy_sa" {
+  for_each        = google_service_account.deploy
   repository      = github_repository.automation.name
   secret_name     = "DEPLOY_SERVICE_ACCOUNT"
-  plaintext_value = google_service_account.deploy.email
+  plaintext_value = each.value.email
 
   depends_on = [
     google_project_service.apis,
-    google_service_account.ar,
+    google_service_account.deploy,
   ]
 }
 

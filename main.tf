@@ -364,7 +364,7 @@ resource "google_storage_bucket_iam_member" "admin" {
 
 # Ensure the Cloud Deploy execution service account can view and create objects in the bootstrapped bucket.
 resource "google_storage_bucket_iam_member" "deploy" {
-  for_each = { for i, pair in setproduct([for sa in google_service_account.deploy : sa.member], ["roles/iam.serviceAccountTokenCreator", "roles/iam.serviceAccountUser"]) : tostring(i) => {
+  for_each = { for i, pair in setproduct([for sa in google_service_account.deploy : sa.member], ["roles/storage.objectViewer", "roles/storage.objectCreator"]) : tostring(i) => {
     member = pair[0]
     role   = pair[1]
   } }

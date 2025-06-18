@@ -119,8 +119,8 @@ variable "iac_impersonators" {
   type     = list(string)
   nullable = true
   validation {
-    condition     = var.impersonators == null ? true : alltrue([for impersonator in var.impersonators : can(regex("^(?:user|group|serviceAccount):", impersonator))])
-    error_message = "The impersonators variable must be empty or contain valid IAM accounts."
+    condition     = var.iac_impersonators == null ? true : alltrue([for impersonator in var.iac_impersonators : can(regex("^(?:user|group|serviceAccount):", impersonator))])
+    error_message = "The iac_impersonators variable must be empty or contain valid IAM accounts."
   }
   default     = []
   description = <<-EOD

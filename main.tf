@@ -54,22 +54,34 @@ locals {
       }
     } : {},
   )
-}
-
-# Bootstrapping should enable the minimal set of services required to complete
-# bootstrap and permit additional actions to be executed.
-resource "google_project_service" "apis" {
-  for_each = { for api in setunion([
+  base_apis = [
     "artifactregistry.googleapis.com",
-    "cloudbuild.googleapis.com",
-    "clouddeploy.googleapis.com",
     "cloudkms.googleapis.com",
     "containerscanning.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
     "storage-api.googleapis.com",
     "sts.googleapis.com",
-  ], var.bootstrap_apis) : api => true }
+  ]
+  # APIs required for Infrastructure Manager
+  infra_manager_apis = [
+    "config.googleapis.com",
+  ]
+  # APIs required for Cloud Deploy
+  cloud_deploy_apis = [
+    "cloudbuild.googleapis.com",
+    "clouddeploy.googleapis.com",
+  ]
+}
+
+# Bootstrapping should enable the minimal set of services required to complete bootstrap and permit additional actions to be executed.
+resource "google_project_service" "apis" {
+  for_each = { for api in setunion(
+    local.base_apis,
+    var.gcp_options.enable_infra_manager ? local.infra_manager_apis : [],
+    var.gcp_options.enable_cloud_deploy ? local.cloud_deploy_apis : [],
+    var.bootstrap_apis,
+  ) : api => true }
   project                    = var.project_id
   service                    = each.key
   disable_on_destroy         = var.gcp_options.services_disable_on_destroy
@@ -92,7 +104,7 @@ resource "google_service_account" "iac" {
 
 # Bind service account to impersonators
 resource "google_service_account_iam_member" "iac_impersonation" {
-  for_each = { for i, pair in setproduct(var.impersonators, ["roles/iam.serviceAccountTokenCreator", "roles/iam.serviceAccountUser"]) : tostring(i) => {
+  for_each = { for i, pair in setproduct(var.iac_impersonators, ["roles/iam.serviceAccountTokenCreator", "roles/iam.serviceAccountUser"]) : tostring(i) => {
     member = pair[0]
     role   = pair[1]
   } }
@@ -119,22 +131,12 @@ resource "google_project_iam_member" "iac" {
   ]
 }
 
-# Ensure the Cloud Build service identity is known
-resource "google_project_service_identity" "build" {
+# Ensure that required service identities are known if Cloud Deploy is to be enabled.
+resource "google_project_service_identity" "ids" {
+  for_each = var.gcp_options.enable_cloud_deploy ? { for api in local.cloud_deploy_apis : api => true } : {}
   provider = google-beta
   project  = var.project_id
-  service  = "cloudbuild.googleapis.com"
-
-  depends_on = [
-    google_project_service.apis,
-  ]
-}
-
-# Ensure the Cloud Deploy service identity is known
-resource "google_project_service_identity" "deploy" {
-  provider = google-beta
-  project  = var.project_id
-  service  = "clouddeploy.googleapis.com"
+  service  = each.key
 
   depends_on = [
     google_project_service.apis,
@@ -144,8 +146,9 @@ resource "google_project_service_identity" "deploy" {
 # This creates the Cloud Deploy execution service account, which can also be used as the Cloud Deploy automation service
 # account.
 resource "google_service_account" "deploy" {
+  for_each     = var.gcp_options.enable_cloud_deploy ? { deploy = format("%s-deploy", var.name) } : {}
   project      = var.project_id
-  account_id   = format("%s-deploy", var.name)
+  account_id   = each.value
   display_name = "Cloud Deploy execution service account"
   description  = <<-EOD
   Cloud Deploy execution service account that will be used for pipelines associated with this repo.
@@ -158,10 +161,11 @@ resource "google_service_account" "deploy" {
 
 # Bind the Cloud Deploy execution service account to job runner role at the project level, which includes access to
 # buckets in the project.
-resource "google_project_iam_member" "sa" {
-  project = var.project_id
-  role    = "roles/clouddeploy.jobRunner"
-  member  = google_service_account.deploy.member
+resource "google_project_iam_member" "deploy" {
+  for_each = google_service_account.deploy
+  project  = var.project_id
+  role     = "roles/clouddeploy.jobRunner"
+  member   = each.value.member
 
   depends_on = [
     google_project_service.apis,
@@ -192,13 +196,20 @@ resource "google_service_account_iam_member" "iac" {
   service_account_id = google_service_account.iac.name
   member             = format("principalSet://iam.googleapis.com/%s/attribute.iac_sa/enabled", google_iam_workload_identity_pool.bots.name)
   role               = "roles/iam.workloadIdentityUser"
+
+  depends_on = [
+    google_project_service.apis,
+    google_service_account.iac,
+    google_iam_workload_identity_pool.bots,
+  ]
 }
 
 # Allow OIDC identities with the custom attribute infra_manager = 'enabled' to manage Infrastructure Manager configs.
 resource "google_project_iam_member" "infra_manager" {
-  project = var.project_id
-  member  = format("principalSet://iam.googleapis.com/%s/attribute.infra_manager/enabled", google_iam_workload_identity_pool.bots.name)
-  role    = "roles/config.admin"
+  for_each = var.gcp_options.enable_infra_manager ? { member = format("principalSet://iam.googleapis.com/%s/attribute.infra_manager/enabled", google_iam_workload_identity_pool.bots.name) } : {}
+  project  = var.project_id
+  member   = each.value
+  role     = "roles/config.admin"
 
   depends_on = [
     google_iam_workload_identity_pool.bots,
@@ -207,8 +218,9 @@ resource "google_project_iam_member" "infra_manager" {
 
 # Allow OIDC identities with the custom attribute infra_manager = 'enabled' to act as IaC service account.
 resource "google_service_account_iam_member" "iac_infra_manager" {
+  for_each           = var.gcp_options.enable_infra_manager ? { member = format("principalSet://iam.googleapis.com/%s/attribute.infra_manager/enabled", google_iam_workload_identity_pool.bots.name) } : {}
   service_account_id = google_service_account.iac.name
-  member             = format("principalSet://iam.googleapis.com/%s/attribute.infra_manager/enabled", google_iam_workload_identity_pool.bots.name)
+  member             = each.value
   role               = "roles/iam.serviceAccountUser"
 
   depends_on = [
@@ -221,16 +233,24 @@ resource "google_service_account_iam_member" "iac_infra_manager" {
 # Bind the workload identity user role on Cloud Deploy execution service account for principals that satisfy the
 # condition that their respective provider has the custom 'deploy_sa' attribute set to true.
 resource "google_service_account_iam_member" "deploy" {
-  service_account_id = google_service_account.deploy.name
+  for_each           = google_service_account.deploy
+  service_account_id = each.value.name
   member             = format("principalSet://iam.googleapis.com/%s/attribute.deploy_sa/enabled", google_iam_workload_identity_pool.bots.name)
   role               = "roles/iam.workloadIdentityUser"
+
+  depends_on = [
+    google_project_service.apis,
+    google_service_account.deploy,
+    google_iam_workload_identity_pool.bots,
+  ]
 }
 
 # Allow OIDC identities with the custom attribute cloud_deploy = 'enabled' to release deployments.
 resource "google_project_iam_member" "cloud_deploy" {
-  project = var.project_id
-  member  = format("principalSet://iam.googleapis.com/%s/attribute.cloud_deploy/enabled", google_iam_workload_identity_pool.bots.name)
-  role    = "roles/clouddeploy.releaser"
+  for_each = var.gcp_options.enable_cloud_deploy ? { member = format("principalSet://iam.googleapis.com/%s/attribute.deploy_sa/enabled", google_iam_workload_identity_pool.bots.name) } : {}
+  project  = var.project_id
+  member   = each.value
+  role     = "roles/clouddeploy.releaser"
 
   depends_on = [
     google_iam_workload_identity_pool.bots,
@@ -343,10 +363,13 @@ resource "google_storage_bucket_iam_member" "admin" {
 
 # Ensure the Cloud Deploy execution service account can view and create objects in the bootstrapped bucket.
 resource "google_storage_bucket_iam_member" "deploy" {
-  for_each = { for role in ["roles/storage.objectViewer", "roles/storage.objectCreator"] : role => true }
-  bucket   = google_storage_bucket.state.name
-  role     = each.key
-  member   = google_service_account.deploy.member
+  for_each = { for i, pair in setproduct([for sa in google_service_account.deploy : sa.member], ["roles/iam.serviceAccountTokenCreator", "roles/iam.serviceAccountUser"]) : tostring(i) => {
+    member = pair[0]
+    role   = pair[1]
+  } }
+  bucket = google_storage_bucket.state.name
+  role   = each.value.role
+  member = each.value.member
 
   depends_on = [
     google_project_service.apis,
@@ -414,7 +437,7 @@ resource "google_artifact_registry_repository_iam_member" "writer" {
   ]
 }
 
-# This creates the service account that may be used by CI services that need to write to registry.
+# This creates the service account that may be used by CI services that need to write to registry without requiring full IaC access.
 resource "google_service_account" "ar" {
   project      = var.project_id
   account_id   = format("%s-ar", var.name)

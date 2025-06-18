@@ -55,6 +55,8 @@ variable "github_options" {
 
 variable "gcp_options" {
   type = object({
+    enable_infra_manager        = bool
+    enable_cloud_deploy         = bool
     services_disable_on_destroy = bool
     disable_dependent_services  = bool
     bucket = object({
@@ -73,6 +75,8 @@ variable "gcp_options" {
   })
   nullable = false
   default = {
+    enable_infra_manager        = true
+    enable_cloud_deploy         = true
     services_disable_on_destroy = false
     disable_dependent_services  = false
     bucket = {
@@ -111,7 +115,7 @@ variable "iac_roles" {
   EOD
 }
 
-variable "impersonators" {
+variable "iac_impersonators" {
   type     = list(string)
   nullable = true
   validation {

@@ -144,3 +144,12 @@ variable "collaborators" {
   An optional set of GitHub users that will be invited to collaborate on the created repo.
   EOD
 }
+
+variable "nginx_jwt" {
+  type        = string
+  nullable    = true
+  default     = null
+  description = <<-EOD
+  An optional NGINX+ JWT to store in Google Secret Manager, with read-only access granted to AR service account.
+  EOD
+}

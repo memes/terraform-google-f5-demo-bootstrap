@@ -4,6 +4,8 @@
     "language": "en",
     "words": [
         "artifactregistry",
+        "cloudbuild",
+        "clouddeploy",
         "cloudkms",
         "containerscanning",
         "Decrypter",

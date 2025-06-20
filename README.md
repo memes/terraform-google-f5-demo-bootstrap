@@ -20,7 +20,9 @@ This Terraform module creates an opinionated automation for an F5 on GCP demo.
 
 ## Modules
 
-No modules.
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_nginx_jwt"></a> [nginx\_jwt](#module\_nginx\_jwt) | memes/secret-manager/google | 2.2.2 |
 
 ## Resources
 
@@ -30,6 +32,7 @@ No modules.
 | [github_actions_secret.deploy_sa](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_secret) | resource |
 | [github_actions_secret.iac_sa](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_secret) | resource |
 | [github_actions_secret.provider_id](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_secret) | resource |
+| [github_actions_variable.nginx_jwt](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_variable) | resource |
 | [github_actions_variable.project_id](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_variable) | resource |
 | [github_actions_variable.registry](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_variable) | resource |
 | [github_repository.automation](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository) | resource |
@@ -81,6 +84,7 @@ No modules.
 | <a name="input_iac_impersonators"></a> [iac\_impersonators](#input\_iac\_impersonators) | A list of fully-qualified IAM accounts that will be allowed to impersonate the IaC automation service account. If no<br/>accounts are supplied, impersonation will not be setup by the script.<br/>E.g.<br/>impersonators = [<br/>  "group:devsecops@example.com",<br/>  "group:admins@example.com",<br/>  "user:jane@example.com",<br/>  "serviceAccount:ci-cd@project.iam.gserviceaccount.com",<br/>] | `list(string)` | `[]` | no |
 | <a name="input_iac_roles"></a> [iac\_roles](#input\_iac\_roles) | An optional set of IAM roles to assign to the IaC automation service account.<br/>Default is an empty set. | `set(string)` | `[]` | no |
 | <a name="input_labels"></a> [labels](#input\_labels) | An optional set of key:value string pairs that will be added to GCP resources<br/>that accept labels. | `map(string)` | `{}` | no |
+| <a name="input_nginx_jwt"></a> [nginx\_jwt](#input\_nginx\_jwt) | An optional NGINX+ JWT to store in Google Secret Manager, with read-only access granted to AR service account. | `string` | `null` | no |
 
 ## Outputs
 

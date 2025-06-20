@@ -8,6 +8,6 @@ module "nginx_jwt" {
   id         = format("%s-nginx-jwt", var.name)
   secret     = each.value
   accessors = [
-    format("serviceAccount:%s", module.bootstrap.ar_sa),
+    google_service_account.ar.member,
   ]
 }

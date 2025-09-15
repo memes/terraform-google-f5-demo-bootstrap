@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.2](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.3.1...v0.3.2) (2025-09-15)
+
+
+### Bug Fixes
+
+* Workload Identity Pool display name &lt;= 32char ([d3f7479](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/d3f74794f40a888e9513218a9150f1912a7de08a))
+* Workload Identity Pool display name &lt;= 32char ([af8004d](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/af8004d35e79c00977121c0a0a697af5f1e1d882))
+
 ## [0.3.1](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.3.0...v0.3.1) (2025-09-15)
 
 

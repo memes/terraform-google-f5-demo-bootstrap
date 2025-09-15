@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -68,13 +68,13 @@ jobs:
           readme-filepath: ./containers/xc-atlantis/README.md
           enable-url-completion: true
       - name: Generate artifact attestation for Docker Hub
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-name: index.docker.io/memes/xc-atlantis
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
       - name: Generate artifact attestation for GHCR
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-name: ghcr.io/${{ github.repository }}/xc-atlantis
           subject-digest: ${{ steps.push.outputs.digest }}

@@ -150,7 +150,7 @@ resource "google_project_iam_member" "deploy" {
 resource "google_iam_workload_identity_pool" "bots" {
   project                   = var.project_id
   workload_identity_pool_id = format("%s-bots", var.name)
-  display_name              = format("Automation pool for %s", var.name)
+  display_name              = substr(format("Automation pool (%s)", var.name), 0, 32)
   description               = <<-EOD
   Defines a pool of third-party providers that can exchange tokens for automation actions.
   EOD

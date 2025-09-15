@@ -1,0 +1,48 @@
+{
+    "name": "memes-terraform-google-f5-demo-bootstrap",
+    "image": "mcr.microsoft.com/devcontainers/base:debian",
+    "features": {
+        "ghcr.io/memes/devcontainers-features/direnv:1": {},
+        "ghcr.io/memes/devcontainers-features/google-cloud-cli:1": {
+            "components": "gke-gcloud-auth-plugin kubectl skaffold"
+        },
+        "ghcr.io/memes/devcontainers-features/opentofu:1": {
+            "version": "1.9.1"
+        },
+        "ghcr.io/memes/devcontainers-features/starship:1": {},
+        "ghcr.io/memes/devcontainers-features/talisman:1": {
+            "version": "1.37.0"
+        },
+        "ghcr.io/memes/devcontainers-features/terraform-docs:1": {
+            "version": "0.20.0"
+        },
+        "ghcr.io/memes/devcontainers-features/tflint:1": {
+            "version": "0.58.0"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "Gruntfuggly.todo-tree",
+                "redhat.vscode-yaml",
+                "streetsidesoftware.code-spell-checker",
+                "gamunu.opentofu",
+                "esbenp.prettier-vscode",
+                "DavidAnson.vscode-markdownlint",
+                "hashicorp.hcl"
+            ]
+        }
+    },
+    "onCreateCommand": {
+        "install-pre-commit": "sudo sh -c 'apt update && apt install -y --no-install-recommends pipx && rm -rf /var/lib/apt/lists/*' && pipx install pre-commit",
+        "modify-default-omz-plugins": ["/usr/bin/sed", "-i.onCreateCommand" , "-e", "/^plugins=/c\\plugins=(git dotenv)", "/home/vscode/.zshrc"]
+    },
+    "postCreateCommand": {
+        "pre-commit-hook": "pre-commit install --hook-type commit-msg --hook-type pre-commit"
+    },
+    "containerUser": "vscode",
+    "updateRemoteUserUID": true,
+    "mounts": [
+        "source=${localEnv:HOME}/.config/gcloud,target=/home/vscode/.config/gcloud,type=bind"
+    ]
+}

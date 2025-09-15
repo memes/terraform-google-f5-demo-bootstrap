@@ -37,43 +37,61 @@ variable "project_id" {
   }
 }
 
-variable "options" {
+variable "github_options" {
   type = object({
+    private_repo = bool
+    name         = string
+    description  = string
+    template     = string
+  })
+  nullable = false
+  default = {
+    private_repo = false
+    name         = ""
+    description  = "Bootstrapped automation repository"
+    template     = ""
+  }
+}
+
+variable "gcp_options" {
+  type = object({
+    enable_infra_manager        = bool
+    enable_cloud_deploy         = bool
     services_disable_on_destroy = bool
     disable_dependent_services  = bool
-    bucket_class                = string
-    bucket_location             = string
-    bucket_force_destroy        = bool
-    bucket_uniform_access       = bool
-    bucket_versioning           = bool
-    private_repo                = bool
+    bucket = object({
+      class          = string
+      location       = string
+      force_destroy  = bool
+      uniform_access = bool
+      versioning     = bool
+    })
     ar = object({
       location = string
       oci      = bool
       deb      = bool
       rpm      = bool
     })
-    repo_description = string
-    repo_name        = string
   })
   nullable = false
   default = {
+    enable_infra_manager        = true
+    enable_cloud_deploy         = true
     services_disable_on_destroy = false
     disable_dependent_services  = false
-    bucket_class                = "STANDARD"
-    bucket_location             = "US"
-    bucket_force_destroy        = true
-    bucket_uniform_access       = true
-    bucket_versioning           = true
-    private_repo                = false
+    bucket = {
+      class          = "STANDARD"
+      location       = "US"
+      force_destroy  = true
+      uniform_access = true
+      versioning     = true
+    }
     ar = {
       location = "us"
       oci      = true
       deb      = false
       rpm      = false
     }
-    repo_description = "Bootstrapped automation repository"
-    repo_name        = ""
   }
 }
 
@@ -87,26 +105,26 @@ variable "bootstrap_apis" {
   EOD
 }
 
-variable "automation_roles" {
+variable "iac_roles" {
   type        = set(string)
   nullable    = false
   default     = []
   description = <<-EOD
-  An optional set of IAM roles to assign to the automation service account.
+  An optional set of IAM roles to assign to the IaC automation service account.
   Default is an empty set.
   EOD
 }
 
-variable "impersonators" {
+variable "iac_impersonators" {
   type     = list(string)
   nullable = true
   validation {
-    condition     = var.impersonators == null ? true : alltrue([for impersonator in var.impersonators : can(regex("^(?:user|group|serviceAccount):", impersonator))])
-    error_message = "The impersonators variable must be empty or contain valid IAM accounts."
+    condition     = var.iac_impersonators == null ? true : alltrue([for impersonator in var.iac_impersonators : can(regex("^(?:user|group|serviceAccount):", impersonator))])
+    error_message = "The iac_impersonators variable must be empty or contain valid IAM accounts."
   }
   default     = []
   description = <<-EOD
-  A list of fully-qualified IAM accounts that will be allowed to impersonate the automation service account. If no
+  A list of fully-qualified IAM accounts that will be allowed to impersonate the IaC automation service account. If no
   accounts are supplied, impersonation will not be setup by the script.
   E.g.
   impersonators = [
@@ -127,16 +145,11 @@ variable "collaborators" {
   EOD
 }
 
-variable "template_repo" {
-  type = object({
-    owner = string
-    repo  = string
-  })
-  validation {
-    # If not null, owner and repo are required to be set to non-empty values
-    condition     = var.template_repo == null ? true : trimspace(var.template_repo.owner) != "" && trimspace(var.template_repo.repo) != ""
-    error_message = "The template_repo variable must include valid owner and repo values."
-  }
-  nullable = true
-  default  = null
+variable "nginx_jwt" {
+  type        = string
+  nullable    = true
+  default     = null
+  description = <<-EOD
+  An optional NGINX+ JWT to store in Google Secret Manager, with read-only access granted to AR service account.
+  EOD
 }

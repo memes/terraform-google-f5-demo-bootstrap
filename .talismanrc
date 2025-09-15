@@ -18,7 +18,7 @@ fileignoreconfig:
 - filename: modules/re-vk8s/variables.tf
   checksum: 7b1c5df0b3e7bdacaade2701f172b6f8b3177dc670ea6ad4c6bf3f52d93114d9
 - filename: variables.tf
-  checksum: c7b2390ef8e2f7ff0b61651032d32395e1071a02f59d8f93879b3293c65355e5
+  checksum: 1bd0cebc52fd5d85993e3ea2cee5a925fd9f21afdde172ba6efdabe7e9cc7e98
 - filename: modules/tfc/main.tf
   checksum: 5234af2aa97b4c57af873191dd5c4d598be1238fae1bceaf079ebf71a9f066ea
 - filename: modules/re-vk8s/main.tf
@@ -26,5 +26,11 @@ fileignoreconfig:
 - filename: examples/xc-atlantis/variables.tf
   checksum: 82a635be593098fffa0d459f7639600fc8e179007582f0c622cfbe19020e70aa
 - filename: main.tf
-  checksum: c0037c7ac921de2884a9b311a07ba96d650ebc7f45df51be317570844881277d
+  checksum: aabe89f42a99b7f1d3a5a13cf8d6176113af3709ca8da4ebeb50619abc0b0d61
+- filename: modules/cloud-deploy/variables.tf
+  checksum: e74127e6ddd94ea70a7d7a9068766f6dc81ba5af63d403033331aaf8d18b1b1d
+- filename: secrets.tf
+  checksum: 0b675e7367d0502647ae3317d838b79ea44c580c79206e3b54795d34a6614c2c
+- filename: github.tf
+  checksum: 793461d222c5e1fcb58d50070b177c6ddc45264b9eaa4c2ccba9dd34a8843ff2
 version: "1.0"

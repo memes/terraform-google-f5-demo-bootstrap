@@ -1,4 +1,3 @@
-# TODO: @memes - update to match requirements
 # spell-checker: disable
 ---
 version: 2
@@ -10,12 +9,6 @@ updates:
     reviewers:
       - memes
   - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    reviewers:
-      - memes
-  - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"

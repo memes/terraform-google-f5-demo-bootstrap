@@ -69,7 +69,7 @@ resource "google_iam_workload_identity_pool_provider" "terraform" {
     "google.subject"                        = "assertion.sub"
     "attribute.automation_sa"               = "'enabled'"
   }
-  # Only allow integration with workspaces associated with the bootrstrapped project
+  # Only allow integration with workspaces associated with the bootstrapped project
   attribute_condition = format("attribute.terraform_project_id == '%s'", tfe_project.automation.id)
   oidc {
     # TODO @memes - the effect of an empty list is to impose a match against the

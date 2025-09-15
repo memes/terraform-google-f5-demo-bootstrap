@@ -6,17 +6,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    reviewers:
-      - memes
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    reviewers:
-      - memes
   - package-ecosystem: "terraform"
     directory: "/"
     schedule:
       interval: "weekly"
-    reviewers:
-      - memes

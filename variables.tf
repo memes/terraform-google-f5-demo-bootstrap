@@ -40,16 +40,16 @@ variable "project_id" {
 variable "github_options" {
   type = object({
     private_repo = bool
-    name         = string
-    description  = string
-    template     = string
+    name         = optional(string)
+    description  = optional(string)
+    template     = optional(string)
   })
   nullable = false
   default = {
     private_repo = false
     name         = ""
     description  = "Bootstrapped automation repository"
-    template     = ""
+    template     = "memes/terraform-google-f5-demo-bootstrap-template"
   }
 }
 

@@ -1,13 +1,13 @@
 # Bootstraps a new GitHub repository with the required settings for automation.
 resource "github_repository" "automation" {
   name        = coalesce(try(var.github_options.name, ""), var.name)
-  description = var.github_options.description
+  description = coalesce(try(var.github_options.description, ""), "Bootstrapped automation repository")
   visibility  = try(var.github_options.private_repo, false) ? "private" : "public"
   dynamic "template" {
     for_each = coalesce(try(var.github_options.template, ""), "unspecified") == "unspecified" ? {} : { template = { owner = reverse(split("/", var.github_options.template))[1], name = reverse(split("/", var.github_options.template))[0] } }
     content {
       owner                = template.value.owner
-      repository           = template.value.repo
+      repository           = template.value.name
       include_all_branches = false
     }
   }

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.3.0...v0.3.1) (2025-09-15)
+
+
+### Bug Fixes
+
+* Resolve error when repo template is provided ([1ed8398](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/1ed839872714c3e96076db68fb907cdebedb0918))
+* Resolve error when repo template is provided ([b02fc62](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/b02fc62fee5de56e9d36ff496209af6a3679b802))
+
 ## [0.3.0](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.2.0...v0.3.0) (2025-09-15)
 
 

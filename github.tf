@@ -1,8 +1,9 @@
 # Bootstraps a new GitHub repository with the required settings for automation.
 resource "github_repository" "automation" {
-  name        = coalesce(try(var.github_options.name, ""), var.name)
-  description = coalesce(try(var.github_options.description, ""), "Bootstrapped automation repository")
-  visibility  = try(var.github_options.private_repo, false) ? "private" : "public"
+  name               = coalesce(try(var.github_options.name, ""), var.name)
+  description        = coalesce(try(var.github_options.description, ""), "Bootstrapped automation repository")
+  visibility         = try(var.github_options.private_repo, false) ? "private" : "public"
+  archive_on_destroy = try(var.github_options.archive_on_destroy, true)
   dynamic "template" {
     for_each = coalesce(try(var.github_options.template, ""), "unspecified") == "unspecified" ? {} : { template = { owner = reverse(split("/", var.github_options.template))[1], name = reverse(split("/", var.github_options.template))[0] } }
     content {
@@ -10,11 +11,6 @@ resource "github_repository" "automation" {
       repository           = template.value.name
       include_all_branches = false
     }
-  }
-
-  # Prevent deletion of the repo during post-demo cleanup
-  lifecycle {
-    prevent_destroy = true
   }
 }
 
@@ -24,11 +20,6 @@ resource "github_repository_collaborator" "collaborators" {
   repository = github_repository.automation.name
   permission = "push"
   username   = each.value
-
-  # Prevent deletion of the repo during post-demo cleanup
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # Create a deploy key

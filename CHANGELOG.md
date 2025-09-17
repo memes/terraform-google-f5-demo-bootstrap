@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.3](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.3.2...v0.3.3) (2025-09-17)
+
+
+### Bug Fixes
+
+* Disable building of XC Atlantis container ([c417a7d](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/c417a7de8efceba6ffecb13bb6ac051f7f7c3408))
+* Disable building of XC Atlantis container ([33415b8](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/33415b82f7a35c81b2106fc9097c72dcdeaee59a))
+* Prefer to archive GitHub repo over destroy ([875f361](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/875f36159de54318316178806447b736ece04d07))
+* Prefer to archive GitHub repo over destroy ([d7b6e26](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/d7b6e26aab0f6d0527c5823789cee415398a464c))
+
 ## [0.3.2](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.3.1...v0.3.2) (2025-09-15)
 
 

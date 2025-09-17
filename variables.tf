@@ -39,17 +39,19 @@ variable "project_id" {
 
 variable "github_options" {
   type = object({
-    private_repo = bool
-    name         = optional(string)
-    description  = optional(string)
-    template     = optional(string)
+    private_repo       = bool
+    name               = optional(string)
+    description        = optional(string)
+    template           = optional(string)
+    archive_on_destroy = optional(bool, true)
   })
   nullable = false
   default = {
-    private_repo = false
-    name         = ""
-    description  = "Bootstrapped automation repository"
-    template     = "memes/terraform-google-f5-demo-bootstrap-template"
+    private_repo       = false
+    name               = ""
+    description        = "Bootstrapped automation repository"
+    template           = "memes/terraform-google-f5-demo-bootstrap-template"
+    archive_on_destroy = true
   }
 }
 

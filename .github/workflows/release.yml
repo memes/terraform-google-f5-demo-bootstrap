@@ -17,6 +17,8 @@ jobs:
   release:
     name: Build and push XC atlantis image to registries
     runs-on: ubuntu-latest
+    # TODO: @memes haven't used Atlantis on RE nodes for a long time remove?
+    if: false
     steps:
       - name: Checkout
         uses: actions/checkout@v5

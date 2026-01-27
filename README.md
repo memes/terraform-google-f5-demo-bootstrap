@@ -1,12 +1,12 @@
 #
 
 ![GitHub release](https://img.shields.io/github/v/release/memes/f5-google-demo-bootstrap?sort=semver)
-![Maintenance](https://img.shields.io/maintenance/yes/2025)
+![Maintenance](https://img.shields.io/maintenance/yes/2026)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 This Terraform module creates an opinionated automation for an F5 on GCP demo.
 
-<!-- markdownlint-disable MD033 MD034-->
+<!-- markdownlint-disable MD033 MD034 MD060 -->
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
@@ -105,4 +105,4 @@ This Terraform module creates an opinionated automation for an F5 on GCP demo.
 | <a name="output_state_bucket"></a> [state\_bucket](#output\_state\_bucket) | The GCS bucket that will host automation related state. |
 | <a name="output_workload_identity_pool_id"></a> [workload\_identity\_pool\_id](#output\_workload\_identity\_pool\_id) | The fully-qualified identifier of the created Workload Identity pool. |
 <!-- END_TF_DOCS -->
-<!-- markdownlint-enable MD033 MD034 -->
+<!-- markdownlint-enable MD033 MD034 MD060 -->

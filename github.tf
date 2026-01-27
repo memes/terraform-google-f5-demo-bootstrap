@@ -5,7 +5,7 @@ resource "github_repository" "automation" {
   visibility         = try(var.github_options.private_repo, false) ? "private" : "public"
   archive_on_destroy = try(var.github_options.archive_on_destroy, true)
   dynamic "template" {
-    for_each = coalesce(try(var.github_options.template, ""), "unspecified") == "unspecified" ? {} : { template = { owner = reverse(split("/", var.github_options.template))[1], name = reverse(split("/", var.github_options.template))[0] } }
+    for_each = coalesce(try(var.github_options.template, "memes/terraform-google-f5-demo-bootstrap-template"), "unspecified") == "unspecified" ? {} : { template = { owner = reverse(split("/", var.github_options.template))[1], name = reverse(split("/", var.github_options.template))[0] } }
     content {
       owner                = template.value.owner
       repository           = template.value.name

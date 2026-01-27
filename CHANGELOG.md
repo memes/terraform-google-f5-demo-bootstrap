@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.3.3...v0.4.0) (2026-01-27)
+
+
+### Bug Fixes
+
+* Move collaborators to github_options ([811a41b](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/811a41ba95ea42b4ad1a82b1adb52761ef6c52cb))
+* private_repo should be optional ([0d01762](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/0d017620be23f3bccb980de4a37ccc109c08adb5))
+* SOPS KMS key id is optional ([8953992](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/8953992bb8bcc3e187845cd4998eb6f0fef226bc))
+
+
+### Continuous Integration
+
+* Fix release version as 0.4.0 ([b637bd0](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/b637bd063f6ec19307620d4bec0ae3ab2911b685))
+
 ## [0.3.3](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.3.2...v0.3.3) (2025-09-17)
 
 

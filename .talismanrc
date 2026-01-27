@@ -34,5 +34,5 @@ fileignoreconfig:
 - filename: github.tf
   checksum: 793461d222c5e1fcb58d50070b177c6ddc45264b9eaa4c2ccba9dd34a8843ff2
 - filename: outputs.tf
-  checksum: 9945ff21c3b3c17ead7f96f7dde95f9be6160a0c76a0766d6fac285ea5f13d88
+  checksum: f859722f0c39e770de44cdcec049b81f25dbdae0d0f34445ff97925467777556
 version: "1.0"

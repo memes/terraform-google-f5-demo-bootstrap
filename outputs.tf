@@ -101,3 +101,15 @@ output "deploy_sa" {
   The fully-qualified email address of the Cloud Deploy execution service account, if enabled.
   EOD
 }
+
+output "nginx_jwt" {
+  value = {
+    secret_id            = one([for k, v in module.nginx_jwt : v.secret_id])
+    id                   = one([for k, v in module.nginx_jwt : v.id])
+    expiration_timestamp = one([for k, v in module.nginx_jwt : v.expiration_timestamp])
+  }
+  description = <<-EOD
+  If an NGINX JWT secret was created during bootstrap, return the fully-qualified and local identifiers, and expiration
+  timestamp, if appropriate.
+  EOD
+}

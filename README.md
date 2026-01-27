@@ -1,12 +1,12 @@
 #
 
 ![GitHub release](https://img.shields.io/github/v/release/memes/f5-google-demo-bootstrap?sort=semver)
-![Maintenance](https://img.shields.io/maintenance/yes/2025)
+![Maintenance](https://img.shields.io/maintenance/yes/2026)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 This Terraform module creates an opinionated automation for an F5 on GCP demo.
 
-<!-- markdownlint-disable MD033 MD034-->
+<!-- markdownlint-disable MD033 MD034 MD060 -->
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
@@ -75,15 +75,14 @@ This Terraform module creates an opinionated automation for an F5 on GCP demo.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_name"></a> [name](#input\_name) | The common name to use for resources. | `string` | n/a | yes |
-| <a name="input_project_id"></a> [project\_id](#input\_project\_id) | n/a | `string` | n/a | yes |
+| <a name="input_name"></a> [name](#input\_name) | The common name (and prefix) to use for Google Cloud and GitHub resources (see also `github_options`). | `string` | n/a | yes |
+| <a name="input_project_id"></a> [project\_id](#input\_project\_id) | The Google Cloud project that will host resources. | `string` | n/a | yes |
 | <a name="input_bootstrap_apis"></a> [bootstrap\_apis](#input\_bootstrap\_apis) | An optional set of Google Cloud APIs to enable during bootstrap, in addition<br/>to those required for bootstrap resources. Default is an empty set. | `set(string)` | `[]` | no |
-| <a name="input_collaborators"></a> [collaborators](#input\_collaborators) | An optional set of GitHub users that will be invited to collaborate on the created repo. | `set(string)` | `[]` | no |
-| <a name="input_gcp_options"></a> [gcp\_options](#input\_gcp\_options) | n/a | <pre>object({<br/>    enable_infra_manager        = bool<br/>    enable_cloud_deploy         = bool<br/>    services_disable_on_destroy = bool<br/>    disable_dependent_services  = bool<br/>    bucket = object({<br/>      class          = string<br/>      location       = string<br/>      force_destroy  = bool<br/>      uniform_access = bool<br/>      versioning     = bool<br/>    })<br/>    ar = object({<br/>      location = string<br/>      oci      = bool<br/>      deb      = bool<br/>      rpm      = bool<br/>    })<br/>  })</pre> | <pre>{<br/>  "ar": {<br/>    "deb": false,<br/>    "location": "us",<br/>    "oci": true,<br/>    "rpm": false<br/>  },<br/>  "bucket": {<br/>    "class": "STANDARD",<br/>    "force_destroy": true,<br/>    "location": "US",<br/>    "uniform_access": true,<br/>    "versioning": true<br/>  },<br/>  "disable_dependent_services": false,<br/>  "enable_cloud_deploy": true,<br/>  "enable_infra_manager": true,<br/>  "services_disable_on_destroy": false<br/>}</pre> | no |
-| <a name="input_github_options"></a> [github\_options](#input\_github\_options) | n/a | <pre>object({<br/>    private_repo       = bool<br/>    name               = optional(string)<br/>    description        = optional(string)<br/>    template           = optional(string)<br/>    archive_on_destroy = optional(bool, true)<br/>  })</pre> | <pre>{<br/>  "archive_on_destroy": true,<br/>  "description": "Bootstrapped automation repository",<br/>  "name": "",<br/>  "private_repo": false,<br/>  "template": "memes/terraform-google-f5-demo-bootstrap-template"<br/>}</pre> | no |
+| <a name="input_gcp_options"></a> [gcp\_options](#input\_gcp\_options) | Defines the parameters for the supporting Google Cloud resources that may not be essential to the demo. By default<br/>service accounts and resources to support Infrastructure Manager (managed Terraform IaC) and Cloud Deploy (managed GKE<br/>and Cloud Run deployments) are created, along with a US Cloud Storage bucket to contain the Terraform state. An<br/>Artifact Repository will be created for OCI containers, but not DEB or RPM repos. Use this variable to override one or<br/>more of these defaults as needed. | <pre>object({<br/>    enable_infra_manager        = optional(bool, true)<br/>    enable_cloud_deploy         = optional(bool, true)<br/>    services_disable_on_destroy = optional(bool, false)<br/>    disable_dependent_services  = optional(bool, false)<br/>    bucket = optional(object({<br/>      class          = string<br/>      location       = string<br/>      force_destroy  = bool<br/>      uniform_access = bool<br/>      versioning     = bool<br/>    }))<br/>    ar = optional(object({<br/>      location = string<br/>      oci      = bool<br/>      deb      = bool<br/>      rpm      = bool<br/>    }))<br/>    kms = optional(bool, false)<br/>  })</pre> | <pre>{<br/>  "ar": {<br/>    "deb": false,<br/>    "location": "us",<br/>    "oci": true,<br/>    "rpm": false<br/>  },<br/>  "bucket": {<br/>    "class": "STANDARD",<br/>    "force_destroy": true,<br/>    "location": "US",<br/>    "uniform_access": true,<br/>    "versioning": true<br/>  },<br/>  "disable_dependent_services": false,<br/>  "enable_cloud_deploy": true,<br/>  "enable_infra_manager": true,<br/>  "kms": false,<br/>  "services_disable_on_destroy": false<br/>}</pre> | no |
+| <a name="input_github_options"></a> [github\_options](#input\_github\_options) | Defines the parameters for the GitHub repository to create for the demo. By default the GitHub repo will be public,<br/>named from the `name` variable and populated from `memes/terraform-google-f5-demo-bootstrap-template` repo. Use this<br/>variable to override one or more of these defaults as needed. | <pre>object({<br/>    private_repo       = optional(bool, false)<br/>    name               = optional(string)<br/>    description        = optional(string)<br/>    template           = optional(string)<br/>    archive_on_destroy = optional(bool, true)<br/>    collaborators      = optional(set(string))<br/>  })</pre> | <pre>{<br/>  "archive_on_destroy": true,<br/>  "collaborators": [],<br/>  "description": "Bootstrapped automation repository",<br/>  "name": "",<br/>  "private_repo": false,<br/>  "template": "memes/terraform-google-f5-demo-bootstrap-template"<br/>}</pre> | no |
 | <a name="input_iac_impersonators"></a> [iac\_impersonators](#input\_iac\_impersonators) | A list of fully-qualified IAM accounts that will be allowed to impersonate the IaC automation service account. If no<br/>accounts are supplied, impersonation will not be setup by the script.<br/>E.g.<br/>impersonators = [<br/>  "group:devsecops@example.com",<br/>  "group:admins@example.com",<br/>  "user:jane@example.com",<br/>  "serviceAccount:ci-cd@project.iam.gserviceaccount.com",<br/>] | `list(string)` | `[]` | no |
 | <a name="input_iac_roles"></a> [iac\_roles](#input\_iac\_roles) | An optional set of IAM roles to assign to the IaC automation service account.<br/>Default is an empty set. | `set(string)` | `[]` | no |
-| <a name="input_labels"></a> [labels](#input\_labels) | An optional set of key:value string pairs that will be added to GCP resources<br/>that accept labels. | `map(string)` | `{}` | no |
+| <a name="input_labels"></a> [labels](#input\_labels) | An optional set of key:value string pairs that will be added to Google Cloud resources that accept labels.<br/>Alternative: Set common labels in the `google` provider configuration. | `map(string)` | `{}` | no |
 | <a name="input_nginx_jwt"></a> [nginx\_jwt](#input\_nginx\_jwt) | An optional NGINX+ JWT to store in Google Secret Manager, with read-only access granted to AR service account. | `string` | `null` | no |
 
 ## Outputs
@@ -100,9 +99,9 @@ This Terraform module creates an opinionated automation for an F5 on GCP demo.
 | <a name="output_iac_sa"></a> [iac\_sa](#output\_iac\_sa) | The fully-qualified email address of the IaC automation service account. |
 | <a name="output_registries"></a> [registries](#output\_registries) | A map of Artifact Registry resources created by the module. |
 | <a name="output_repo_identifiers"></a> [repo\_identifiers](#output\_repo\_identifiers) | A map of Artifact Registry resource types to canonical access identifiers. |
-| <a name="output_sops_kms_id"></a> [sops\_kms\_id](#output\_sops\_kms\_id) | The identifier of the KMS encryption/decryption key created by the module for sops usage. |
+| <a name="output_sops_kms_id"></a> [sops\_kms\_id](#output\_sops\_kms\_id) | The identifier of the KMS encryption/decryption key created by the module for sops usage, if KMS enabled. |
 | <a name="output_ssh_clone_url"></a> [ssh\_clone\_url](#output\_ssh\_clone\_url) | The repo's clone with SSH URL. |
 | <a name="output_state_bucket"></a> [state\_bucket](#output\_state\_bucket) | The GCS bucket that will host automation related state. |
 | <a name="output_workload_identity_pool_id"></a> [workload\_identity\_pool\_id](#output\_workload\_identity\_pool\_id) | The fully-qualified identifier of the created Workload Identity pool. |
 <!-- END_TF_DOCS -->
-<!-- markdownlint-enable MD033 MD034 -->
+<!-- markdownlint-enable MD033 MD034 MD060 -->

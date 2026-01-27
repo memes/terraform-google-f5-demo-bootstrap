@@ -24,9 +24,9 @@ output "repo_identifiers" {
 }
 
 output "sops_kms_id" {
-  value       = google_kms_crypto_key.sops.id
+  value       = one([for k, v in google_kms_crypto_key.sops : v.id])
   description = <<-EOD
-  The identifier of the KMS encryption/decryption key created by the module for sops usage.
+  The identifier of the KMS encryption/decryption key created by the module for sops usage, if KMS enabled.
   EOD
 }
 

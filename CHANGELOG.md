@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.4.0...v0.4.1) (2026-01-27)
+
+
+### Bug Fixes
+
+* Default to upstream repo template ([44e4316](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/44e4316e143919b158e31894ee9e00cd0be71a6e))
+* Default to upstream repo template ([758a4b2](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/758a4b212dcd641aff07d85e54eb777641e8402e))
+
 ## [0.4.0](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.3.3...v0.4.0) (2026-01-27)
 
 

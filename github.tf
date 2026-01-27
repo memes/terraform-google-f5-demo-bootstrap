@@ -16,7 +16,7 @@ resource "github_repository" "automation" {
 
 # Invite collaborators to the new repo
 resource "github_repository_collaborator" "collaborators" {
-  for_each   = var.collaborators
+  for_each   = try(var.github_options.collaborators, [])
   repository = github_repository.automation.name
   permission = "push"
   username   = each.value

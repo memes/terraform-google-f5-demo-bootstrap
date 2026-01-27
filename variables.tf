@@ -8,7 +8,7 @@ variable "name" {
     error_message = "The name variable must be RFC1035 compliant and between 1 and 26 characters in length."
   }
   description = <<-EOD
-  The common name to use for resources.
+  The common name (and prefix) to use for Google Cloud and GitHub resources (see also `github_options`).
   EOD
 }
 
@@ -23,8 +23,8 @@ variable "labels" {
   }
   default     = {}
   description = <<-EOD
-  An optional set of key:value string pairs that will be added to GCP resources
-  that accept labels.
+  An optional set of key:value string pairs that will be added to Google Cloud resources that accept labels.
+  Alternative: Set common labels in the `google` provider configuration.
   EOD
 }
 
@@ -35,6 +35,9 @@ variable "project_id" {
     condition     = can(regex("^[a-z][a-z0-9-]{4,28}[a-z0-9]$", var.project_id))
     error_message = "The project_id value must be a valid Google Cloud project identifier"
   }
+  description = <<-EOD
+  The Google Cloud project that will host resources.
+  EOD
 }
 
 variable "github_options" {
@@ -44,38 +47,46 @@ variable "github_options" {
     description        = optional(string)
     template           = optional(string)
     archive_on_destroy = optional(bool, true)
+    collaborators      = optional(set(string))
   })
-  nullable = false
+  nullable = true
   default = {
     private_repo       = false
     name               = ""
     description        = "Bootstrapped automation repository"
     template           = "memes/terraform-google-f5-demo-bootstrap-template"
     archive_on_destroy = true
+    collaborators      = []
   }
+  description = <<-EOD
+  Defines the parameters for the GitHub repository to create for the demo. By default the GitHub repo will be public,
+  named from the `name` variable and populated from `memes/terraform-google-f5-demo-bootstrap-template` repo. Use this
+  variable to override one or more of these defaults as needed.
+  EOD
 }
 
 variable "gcp_options" {
   type = object({
-    enable_infra_manager        = bool
-    enable_cloud_deploy         = bool
-    services_disable_on_destroy = bool
-    disable_dependent_services  = bool
-    bucket = object({
+    enable_infra_manager        = optional(bool, true)
+    enable_cloud_deploy         = optional(bool, true)
+    services_disable_on_destroy = optional(bool, false)
+    disable_dependent_services  = optional(bool, false)
+    bucket = optional(object({
       class          = string
       location       = string
       force_destroy  = bool
       uniform_access = bool
       versioning     = bool
-    })
-    ar = object({
+    }))
+    ar = optional(object({
       location = string
       oci      = bool
       deb      = bool
       rpm      = bool
-    })
+    }))
+    kms = optional(bool, false)
   })
-  nullable = false
+  nullable = true
   default = {
     enable_infra_manager        = true
     enable_cloud_deploy         = true
@@ -94,7 +105,15 @@ variable "gcp_options" {
       deb      = false
       rpm      = false
     }
+    kms = false
   }
+  description = <<-EOD
+  Defines the parameters for the supporting Google Cloud resources that may not be essential to the demo. By default
+  service accounts and resources to support Infrastructure Manager (managed Terraform IaC) and Cloud Deploy (managed GKE
+  and Cloud Run deployments) are created, along with a US Cloud Storage bucket to contain the Terraform state. An
+  Artifact Repository will be created for OCI containers, but not DEB or RPM repos. Use this variable to override one or
+  more of these defaults as needed.
+  EOD
 }
 
 variable "bootstrap_apis" {
@@ -135,15 +154,6 @@ variable "iac_impersonators" {
     "user:jane@example.com",
     "serviceAccount:ci-cd@project.iam.gserviceaccount.com",
   ]
-  EOD
-}
-
-variable "collaborators" {
-  type        = set(string)
-  nullable    = false
-  default     = []
-  description = <<-EOD
-  An optional set of GitHub users that will be invited to collaborate on the created repo.
   EOD
 }
 

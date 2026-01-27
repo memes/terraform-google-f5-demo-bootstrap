@@ -49,14 +49,14 @@ locals {
 resource "google_project_service" "apis" {
   for_each = { for api in setunion(
     local.base_apis,
-    var.gcp_options.enable_infra_manager ? local.infra_manager_apis : [],
-    var.gcp_options.enable_cloud_deploy ? local.cloud_deploy_apis : [],
+    try(var.gcp_options.enable_infra_manager, true) ? local.infra_manager_apis : [],
+    try(var.gcp_options.enable_cloud_deploy, true) ? local.cloud_deploy_apis : [],
     var.bootstrap_apis,
   ) : api => true }
   project                    = var.project_id
   service                    = each.key
-  disable_on_destroy         = var.gcp_options.services_disable_on_destroy
-  disable_dependent_services = var.gcp_options.disable_dependent_services
+  disable_on_destroy         = try(var.gcp_options.services_disable_on_destroy, false)
+  disable_dependent_services = try(var.gcp_options.disable_dependent_services, false)
 }
 
 # This creates the IaC service account that may be used by automation services such as Terraform Cloud, Atlantis or Infra Manager.
@@ -104,7 +104,7 @@ resource "google_project_iam_member" "iac" {
 
 # Ensure that required service identities are known if Cloud Deploy is to be enabled.
 resource "google_project_service_identity" "ids" {
-  for_each = var.gcp_options.enable_cloud_deploy ? { for api in local.cloud_deploy_apis : api => true } : {}
+  for_each = try(var.gcp_options.enable_cloud_deploy, true) ? { for api in local.cloud_deploy_apis : api => true } : {}
   provider = google-beta
   project  = var.project_id
   service  = each.key
@@ -117,7 +117,7 @@ resource "google_project_service_identity" "ids" {
 # This creates the Cloud Deploy execution service account, which can also be used as the Cloud Deploy automation service
 # account.
 resource "google_service_account" "deploy" {
-  for_each     = var.gcp_options.enable_cloud_deploy ? { deploy = format("%s-deploy", var.name) } : {}
+  for_each     = try(var.gcp_options.enable_cloud_deploy, true) ? { deploy = format("%s-deploy", var.name) } : {}
   project      = var.project_id
   account_id   = each.value
   display_name = "Cloud Deploy execution service account"
@@ -177,7 +177,7 @@ resource "google_service_account_iam_member" "iac" {
 
 # Allow OIDC identities with the custom attribute infra_manager = 'enabled' to manage Infrastructure Manager configs.
 resource "google_project_iam_member" "infra_manager" {
-  for_each = var.gcp_options.enable_infra_manager ? { member = format("principalSet://iam.googleapis.com/%s/attribute.infra_manager/enabled", google_iam_workload_identity_pool.bots.name) } : {}
+  for_each = try(var.gcp_options.enable_infra_manager, true) ? { member = format("principalSet://iam.googleapis.com/%s/attribute.infra_manager/enabled", google_iam_workload_identity_pool.bots.name) } : {}
   project  = var.project_id
   member   = each.value
   role     = "roles/config.admin"
@@ -218,7 +218,7 @@ resource "google_service_account_iam_member" "deploy" {
 
 # Allow OIDC identities with the custom attribute cloud_deploy = 'enabled' to release deployments.
 resource "google_project_iam_member" "cloud_deploy" {
-  for_each = var.gcp_options.enable_cloud_deploy ? { member = format("principalSet://iam.googleapis.com/%s/attribute.deploy_sa/enabled", google_iam_workload_identity_pool.bots.name) } : {}
+  for_each = try(var.gcp_options.enable_cloud_deploy, true) ? { member = format("principalSet://iam.googleapis.com/%s/attribute.deploy_sa/enabled", google_iam_workload_identity_pool.bots.name) } : {}
   project  = var.project_id
   member   = each.value
   role     = "roles/clouddeploy.releaser"
@@ -244,6 +244,7 @@ resource "google_service_account_iam_member" "deploy_cloud_deploy" {
 
 # Create a KMS key ring for use by automation modules
 resource "google_kms_key_ring" "automation" {
+  for_each = try(var.gcp_options.kms, false) ? { enabled = true } : {}
   project  = var.project_id
   name     = format("%s-automation", var.name)
   location = try(lower(var.gcp_options.bucket.location), "global")
@@ -254,7 +255,8 @@ resource "google_kms_key_ring" "automation" {
 
 # Allow the IaC automation SA to use any KMS key in the key ring for encryption and decryption
 resource "google_kms_key_ring_iam_member" "iac" {
-  key_ring_id = google_kms_key_ring.automation.id
+  for_each    = google_kms_key_ring.automation
+  key_ring_id = each.value.id
   role        = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member      = google_service_account.iac.member
 
@@ -266,8 +268,9 @@ resource "google_kms_key_ring_iam_member" "iac" {
 
 # Create a KMS key solely for external encryption and decryption such as sops operations
 resource "google_kms_crypto_key" "sops" {
+  for_each = google_kms_key_ring.automation
   name     = format("%s-sops", var.name)
-  key_ring = google_kms_key_ring.automation.id
+  key_ring = each.value.id
   labels   = var.labels
 
   depends_on = [
@@ -277,8 +280,9 @@ resource "google_kms_crypto_key" "sops" {
 
 # Create a KMS key solely for encrypting bucket objects
 resource "google_kms_crypto_key" "gcs" {
+  for_each = google_kms_key_ring.automation
   name     = format("%s-gcs", var.name)
-  key_ring = google_kms_key_ring.automation.id
+  key_ring = each.value.id
   purpose  = "ENCRYPT_DECRYPT"
   labels   = var.labels
 
@@ -289,7 +293,8 @@ resource "google_kms_crypto_key" "gcs" {
 
 # Allow the default project storage SA to use the state KMS key for encryption and decryption of objects
 resource "google_kms_crypto_key_iam_member" "gcs" {
-  crypto_key_id = google_kms_crypto_key.gcs.id
+  for_each      = google_kms_crypto_key.gcs
+  crypto_key_id = each.value.id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = data.google_storage_project_service_account.default.member
   depends_on = [
@@ -311,8 +316,11 @@ resource "google_storage_bucket" "state" {
   versioning {
     enabled = try(var.gcp_options.bucket.versioning, false)
   }
-  encryption {
-    default_kms_key_name = google_kms_crypto_key.gcs.id
+  dynamic "encryption" {
+    for_each = google_kms_crypto_key.gcs
+    content {
+      default_kms_key_name = encyrption.value.id
+    }
   }
 
   depends_on = [

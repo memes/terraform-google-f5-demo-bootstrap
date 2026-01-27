@@ -99,7 +99,7 @@ This Terraform module creates an opinionated automation for an F5 on GCP demo.
 | <a name="output_iac_sa"></a> [iac\_sa](#output\_iac\_sa) | The fully-qualified email address of the IaC automation service account. |
 | <a name="output_registries"></a> [registries](#output\_registries) | A map of Artifact Registry resources created by the module. |
 | <a name="output_repo_identifiers"></a> [repo\_identifiers](#output\_repo\_identifiers) | A map of Artifact Registry resource types to canonical access identifiers. |
-| <a name="output_sops_kms_id"></a> [sops\_kms\_id](#output\_sops\_kms\_id) | The identifier of the KMS encryption/decryption key created by the module for sops usage. |
+| <a name="output_sops_kms_id"></a> [sops\_kms\_id](#output\_sops\_kms\_id) | The identifier of the KMS encryption/decryption key created by the module for sops usage, if KMS enabled. |
 | <a name="output_ssh_clone_url"></a> [ssh\_clone\_url](#output\_ssh\_clone\_url) | The repo's clone with SSH URL. |
 | <a name="output_state_bucket"></a> [state\_bucket](#output\_state\_bucket) | The GCS bucket that will host automation related state. |
 | <a name="output_workload_identity_pool_id"></a> [workload\_identity\_pool\_id](#output\_workload\_identity\_pool\_id) | The fully-qualified identifier of the created Workload Identity pool. |

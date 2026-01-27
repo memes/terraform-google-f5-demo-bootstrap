@@ -42,7 +42,7 @@ variable "project_id" {
 
 variable "github_options" {
   type = object({
-    private_repo       = bool
+    private_repo       = optional(bool, false)
     name               = optional(string)
     description        = optional(string)
     template           = optional(string)

@@ -44,8 +44,8 @@ variable "github_options" {
   type = object({
     private_repo       = optional(bool, false)
     name               = optional(string)
-    description        = optional(string)
-    template           = optional(string)
+    description        = optional(string, "Bootstrapped automation repository")
+    template           = optional(string, "memes/terraform-google-f5-demo-bootstrap-template")
     archive_on_destroy = optional(bool, true)
     collaborators      = optional(set(string))
   })

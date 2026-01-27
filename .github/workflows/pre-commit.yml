@@ -37,7 +37,7 @@ jobs:
         uses: terraform-linters/setup-tflint@v6
         with:
           cache: true
-          tflint_version: 0.60.0
+          tflint_version: v0.60.0
       - name: Install opentofu
         uses: opentofu/setup-opentofu@v1
         with:

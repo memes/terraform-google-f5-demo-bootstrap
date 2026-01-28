@@ -97,6 +97,7 @@ This Terraform module creates an opinionated automation for an F5 on GCP demo.
 | <a name="output_html_url"></a> [html\_url](#output\_html\_url) | The URL to the GitHub repository created for this project. |
 | <a name="output_http_clone_url"></a> [http\_clone\_url](#output\_http\_clone\_url) | The repo's clone over HTTPS URL. |
 | <a name="output_iac_sa"></a> [iac\_sa](#output\_iac\_sa) | The fully-qualified email address of the IaC automation service account. |
+| <a name="output_nginx_jwt"></a> [nginx\_jwt](#output\_nginx\_jwt) | If an NGINX JWT secret was created during bootstrap, return the fully-qualified and local identifiers, and expiration<br/>timestamp, if appropriate. |
 | <a name="output_registries"></a> [registries](#output\_registries) | A map of Artifact Registry resources created by the module. |
 | <a name="output_repo_identifiers"></a> [repo\_identifiers](#output\_repo\_identifiers) | A map of Artifact Registry resource types to canonical access identifiers. |
 | <a name="output_sops_kms_id"></a> [sops\_kms\_id](#output\_sops\_kms\_id) | The identifier of the KMS encryption/decryption key created by the module for sops usage, if KMS enabled. |

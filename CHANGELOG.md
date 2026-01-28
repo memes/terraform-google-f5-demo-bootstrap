@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.2](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.4.1...v0.4.2) (2026-01-28)
+
+
+### Bug Fixes
+
+* Add Secret Manager output for NGINX JWT ([b2db4e2](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/b2db4e208d97b19147cc77dbdae87b1fc268cef2))
+* Add Secret Manager output for NGINX JWT ([6902573](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/690257313076e8f7a35418bd5c11e470f8b1b66c))
+
 ## [0.4.1](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.4.0...v0.4.1) (2026-01-27)
 
 

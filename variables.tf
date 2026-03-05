@@ -173,5 +173,9 @@ variable "cloud_deploy_roles" {
   description = <<-EOD
   An optional set of IAM roles to assign to the Cloud Deploy automation service account, if it is created. Default is an
   empty set.
+  E.g. to support deploying to GKE:
+  cloud_deploy_roles = [
+    "roles/container.developer",
+  ]
   EOD
 }

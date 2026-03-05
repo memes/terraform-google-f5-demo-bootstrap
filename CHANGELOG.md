@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.4.2...v0.5.0) (2026-03-05)
+
+
+### Features
+
+* Optional project roles for Cloud Deploy sa ([df1fb4e](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/df1fb4e3c9e5cb0eaa7887f87fb34ea9c88dd88d))
+
+
+### Bug Fixes
+
+* Only enable Secret Manager/KMS APIs on demand ([f76df8e](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/f76df8ecda30bbe562bedb1f0ee64f68d4f22724))
+* Typo in bootstrap_apis ([0dbe623](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/0dbe6230f380325b603b2b5416f580c7367595ba))
+* Was mixing lists and sets for deploy roles ([2797b2d](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/2797b2d5eaa0e1aca277687941b862e0a87cbdde))
+
 ## [0.4.2](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.4.1...v0.4.2) (2026-01-28)
 
 

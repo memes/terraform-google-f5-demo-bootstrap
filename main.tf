@@ -61,7 +61,7 @@ resource "google_project_service" "apis" {
     try(var.gcp_options.enable_cloud_deploy, true) ? local.cloud_deploy_apis : [],
     try(var.gcp_options.kms, false) ? local.kms_apis : [],
     coalesce(var.nginx_jwt, "unspecified") != "unspecified" ? local.secret_manager_apis : [],
-    var.bootstrap_apis == null ? [] : var.var.bootstrap_apis,
+    var.bootstrap_apis == null ? [] : var.bootstrap_apis,
   ) : api => true }
   project                    = var.project_id
   service                    = each.key

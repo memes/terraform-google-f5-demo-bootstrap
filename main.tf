@@ -27,10 +27,10 @@ data "google_storage_project_service_account" "default" {
 locals {
   base_apis = [
     "artifactregistry.googleapis.com",
-    "cloudkms.googleapis.com",
     "containerscanning.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
+    "serviceusage.googleapis.com",
     "storage-api.googleapis.com",
     "sts.googleapis.com",
   ]
@@ -43,6 +43,14 @@ locals {
     "cloudbuild.googleapis.com",
     "clouddeploy.googleapis.com",
   ]
+  # APIs required for KMS
+  kms_apis = [
+    "cloudkms.googleapis.com",
+  ]
+  # APIs required for Secret Manager
+  secret_manager_apis = [
+    "secretmanager.googleapis.com",
+  ]
 }
 
 # Bootstrapping should enable the minimal set of services required to complete bootstrap and permit additional actions to be executed.
@@ -51,7 +59,9 @@ resource "google_project_service" "apis" {
     local.base_apis,
     try(var.gcp_options.enable_infra_manager, true) ? local.infra_manager_apis : [],
     try(var.gcp_options.enable_cloud_deploy, true) ? local.cloud_deploy_apis : [],
-    var.bootstrap_apis,
+    try(var.gcp_options.kms, false) ? local.kms_apis : [],
+    coalesce(var.nginx_jwt, "unspecified") != "unspecified" ? local.secret_manager_apis : [],
+    var.bootstrap_apis == null ? [] : var.bootstrap_apis,
   ) : api => true }
   project                    = var.project_id
   service                    = each.key
@@ -91,7 +101,7 @@ resource "google_service_account_iam_member" "iac_impersonation" {
 
 # Bind the IaC automation service account to the necessary project roles.
 resource "google_project_iam_member" "iac" {
-  for_each = var.iac_roles
+  for_each = var.iac_roles == null ? [] : var.iac_roles
   project  = var.project_id
   role     = each.key
   member   = google_service_account.iac.member
@@ -131,12 +141,15 @@ resource "google_service_account" "deploy" {
 }
 
 # Bind the Cloud Deploy execution service account to job runner role at the project level, which includes access to
-# buckets in the project.
+# buckets in the project, and any other explicit roles provided.
 resource "google_project_iam_member" "deploy" {
-  for_each = google_service_account.deploy
-  project  = var.project_id
-  role     = "roles/clouddeploy.jobRunner"
-  member   = each.value.member
+  for_each = { for i, pair in setproduct([for sa in google_service_account.deploy : sa.member], distinct(compact(concat(["roles/clouddeploy.jobRunner"], try(length(var.cloud_deploy_roles), 0) == 0 ? [] : tolist(var.cloud_deploy_roles))))) : tostring(i) => {
+    member = pair[0]
+    role   = pair[1]
+  } }
+  project = var.project_id
+  role    = each.value.role
+  member  = each.value.member
 
   depends_on = [
     google_project_service.apis,

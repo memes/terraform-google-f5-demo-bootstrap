@@ -101,10 +101,13 @@ resource "google_service_account_iam_member" "iac_impersonation" {
 
 # Bind the IaC automation service account to the necessary project roles.
 resource "google_project_iam_member" "iac" {
-  for_each = var.iac_roles == null ? [] : var.iac_roles
-  project  = var.project_id
-  role     = each.key
-  member   = google_service_account.iac.member
+  for_each = setunion(
+    var.iac_roles == null ? [] : var.iac_roles,
+    try(var.gcp_options.enable_infra_manager, true) ? ["roles/config.agent"] : [],
+  )
+  project = var.project_id
+  role    = each.key
+  member  = google_service_account.iac.member
 
   depends_on = [
     google_project_service.apis,

@@ -118,7 +118,7 @@ variable "gcp_options" {
 
 variable "bootstrap_apis" {
   type        = set(string)
-  nullable    = false
+  nullable    = true
   default     = []
   description = <<-EOD
   An optional set of Google Cloud APIs to enable during bootstrap, in addition
@@ -128,7 +128,7 @@ variable "bootstrap_apis" {
 
 variable "iac_roles" {
   type        = set(string)
-  nullable    = false
+  nullable    = true
   default     = []
   description = <<-EOD
   An optional set of IAM roles to assign to the IaC automation service account.
@@ -163,5 +163,15 @@ variable "nginx_jwt" {
   default     = null
   description = <<-EOD
   An optional NGINX+ JWT to store in Google Secret Manager, with read-only access granted to AR service account.
+  EOD
+}
+
+variable "cloud_deploy_roles" {
+  type        = set(string)
+  nullable    = true
+  default     = []
+  description = <<-EOD
+  An optional set of IAM roles to assign to the Cloud Deploy automation service account, if it is created. Default is an
+  empty set.
   EOD
 }

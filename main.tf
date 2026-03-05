@@ -143,7 +143,7 @@ resource "google_service_account" "deploy" {
 # Bind the Cloud Deploy execution service account to job runner role at the project level, which includes access to
 # buckets in the project, and any other explicit roles provided.
 resource "google_project_iam_member" "deploy" {
-  for_each = { for i, pair in setproduct([for sa in google_service_account.deploy : sa.member], distinct(compact(concat(["roles/clouddeploy.jobRunner"], var.cloud_deploy_roles == null ? [] : var.cloud_deploy_roles)))) : tostring(i) => {
+  for_each = { for i, pair in setproduct([for sa in google_service_account.deploy : sa.member], distinct(compact(concat(["roles/clouddeploy.jobRunner"], try(length(var.cloud_deploy_roles), 0) == 0 ? [] : tolist(var.cloud_deploy_roles))))) : tostring(i) => {
     member = pair[0]
     role   = pair[1]
   } }

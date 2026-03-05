@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.5.0...v0.5.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* IaC sa gets config.agent if Infra Manager set ([1e3ef62](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/1e3ef629b2c4563fa1745a308adb770eadc1a90a))
+
 ## [0.5.0](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.4.2...v0.5.0) (2026-03-05)
 
 

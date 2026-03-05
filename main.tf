@@ -27,10 +27,10 @@ data "google_storage_project_service_account" "default" {
 locals {
   base_apis = [
     "artifactregistry.googleapis.com",
-    "cloudkms.googleapis.com",
     "containerscanning.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
+    "serviceusage.googleapis.com",
     "storage-api.googleapis.com",
     "sts.googleapis.com",
   ]
@@ -43,6 +43,14 @@ locals {
     "cloudbuild.googleapis.com",
     "clouddeploy.googleapis.com",
   ]
+  # APIs required for KMS
+  kms_apis = [
+    "cloudkms.googleapis.com",
+  ]
+  # APIs required for Secret Manager
+  secret_manager_apis = [
+    "secretmanager.googleapis.com",
+  ]
 }
 
 # Bootstrapping should enable the minimal set of services required to complete bootstrap and permit additional actions to be executed.
@@ -51,6 +59,8 @@ resource "google_project_service" "apis" {
     local.base_apis,
     try(var.gcp_options.enable_infra_manager, true) ? local.infra_manager_apis : [],
     try(var.gcp_options.enable_cloud_deploy, true) ? local.cloud_deploy_apis : [],
+    try(var.gcp_options.kms, false) ? local.kms_apis : [],
+    coalesce(var.nginx_jwt, "unspecified") != "unspecified" ? local.secret_manager_apis : [],
     var.bootstrap_apis,
   ) : api => true }
   project                    = var.project_id

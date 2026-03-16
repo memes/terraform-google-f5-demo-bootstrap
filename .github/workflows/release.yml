@@ -53,7 +53,7 @@ jobs:
             org.opencontainers.image.authors=memes@matthewemes.com
       - name: Build and push Docker images
         id: push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./containers/xc-atlantis
           file: ./containers/xc-atlantis/Dockerfile

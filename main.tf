@@ -177,6 +177,20 @@ resource "google_iam_workload_identity_pool" "bots" {
   ]
 }
 
+# If the flag to enable workload identity pool admin is set for IaC, grant the role on the pool, not project.
+resource "google_iam_workload_identity_pool_iam_member" "iac" {
+  for_each                  = try(var.iac_options.enable_workload_identity_pool_admin, false) ? { enabled = true } : {}
+  project                   = google_iam_workload_identity_pool.bots.project
+  workload_identity_pool_id = google_iam_workload_identity_pool.bots.workload_identity_pool_id
+  role                      = "roles/iam.workloadIdentityPoolAdmin"
+  member                    = google_service_account.iac.member
+
+  depends_on = [
+    google_service_account.iac,
+    google_iam_workload_identity_pool.bots,
+  ]
+}
+
 # Bind the workload identity user role on automation service account for principals that satisfy the condition that their respective provider has the custom
 # 'iac_sa' attribute set to true.
 resource "google_service_account_iam_member" "iac" {

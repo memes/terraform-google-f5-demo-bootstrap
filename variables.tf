@@ -179,3 +179,14 @@ variable "cloud_deploy_roles" {
   ]
   EOD
 }
+
+variable "iac_options" {
+  type = object({
+    enable_workload_identity_pool_admin = optional(bool, false)
+  })
+  nullable    = true
+  default     = null
+  description = <<-EOD
+  An optional set of flags to apply to the IaC account.
+  EOD
+}

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.5.1...v0.6.0) (2026-04-15)
+
+
+### Features
+
+* Add IaC service account flags ([035a2a5](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/035a2a55933f6fdd4b4e464932a59cdc3eebb0a9))
+
+
+### Bug Fixes
+
+* Bump Google provider to latest ([422a667](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/422a66716f548ee87c96592ed7078a2cbb85dfc3))
+
 ## [0.5.1](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.5.0...v0.5.1) (2026-03-05)
 
 

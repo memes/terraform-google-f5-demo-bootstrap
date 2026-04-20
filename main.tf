@@ -232,11 +232,11 @@ resource "google_service_account_iam_member" "iac_infra_manager" {
 }
 
 # Bind the workload identity user role on Cloud Deploy execution service account for principals that satisfy the
-# condition that their respective provider has the custom 'deploy_sa' attribute set to true.
+# condition that their respective provider has the custom 'cloud_deploy' attribute set to true.
 resource "google_service_account_iam_member" "deploy" {
   for_each           = google_service_account.deploy
   service_account_id = each.value.name
-  member             = format("principalSet://iam.googleapis.com/%s/attribute.deploy_sa/enabled", google_iam_workload_identity_pool.bots.name)
+  member             = format("principalSet://iam.googleapis.com/%s/attribute.cloud_deploy/enabled", google_iam_workload_identity_pool.bots.name)
   role               = "roles/iam.workloadIdentityUser"
 
   depends_on = [
@@ -248,7 +248,7 @@ resource "google_service_account_iam_member" "deploy" {
 
 # Allow OIDC identities with the custom attribute cloud_deploy = 'enabled' to release deployments.
 resource "google_project_iam_member" "cloud_deploy" {
-  for_each = try(var.gcp_options.enable_cloud_deploy, true) ? { member = format("principalSet://iam.googleapis.com/%s/attribute.deploy_sa/enabled", google_iam_workload_identity_pool.bots.name) } : {}
+  for_each = try(var.gcp_options.enable_cloud_deploy, true) ? { member = format("principalSet://iam.googleapis.com/%s/attribute.cloud_deploy/enabled", google_iam_workload_identity_pool.bots.name) } : {}
   project  = var.project_id
   member   = each.value
   role     = "roles/clouddeploy.releaser"

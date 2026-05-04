@@ -11,7 +11,7 @@ terraform {
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = ">= 6.9"
+      version = ">= 7.28"
     }
     tls = {
       source  = "hashicorp/tls"

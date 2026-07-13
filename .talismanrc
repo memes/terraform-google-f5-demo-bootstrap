@@ -37,4 +37,10 @@ fileignoreconfig:
   checksum: a1b8538dffcba5b868c46de97de12ee66489843e06d230b3a6b654ad31b7172d
 - filename: .devcontainer/devcontainer-lock.json
   checksum: 3f5c1d0cc98a070c8474b9ecf0387e4c3e8e407064de9ee81c6136d0f6588647
+- filename: tests/default.tftest.hcl
+  checksum: c8cda40836fc86c93a127b91e983c158a42da2b107e41a2bfc7a11a4ba520584
+- filename: tests/github_options.tftest.hcl
+  checksum: 150ab33266656c652a9e374e0a2da4f8c87332555c91149a9739dd34001d9f7b
+- filename: tests/gcp_variables.tftest.hcl
+  checksum: 75ae9d96dc7da55f568d2602dcf087c52533e028eb67d08fdef449cad5795179
 version: "1.0"

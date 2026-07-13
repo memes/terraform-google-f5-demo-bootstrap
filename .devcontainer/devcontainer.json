@@ -2,28 +2,16 @@
     "name": "memes-terraform-google-f5-demo-bootstrap",
     "image": "mcr.microsoft.com/devcontainers/base:debian",
     "features": {
-        "ghcr.io/memes/devcontainers-features/direnv:1": {},
-        "ghcr.io/memes/devcontainers-features/google-cloud-cli:1": {
-            "components": "gke-gcloud-auth-plugin kubectl skaffold"
-        },
-        "ghcr.io/memes/devcontainers-features/opentofu:1": {
-            "version": "1.11.4"
-        },
-        "ghcr.io/memes/devcontainers-features/starship:1": {},
-        "ghcr.io/memes/devcontainers-features/talisman:1": {
-            "version": "1.37.0"
-        },
-        "ghcr.io/memes/devcontainers-features/terraform-docs:1": {
-            "version": "0.21.0"
-        },
-        "ghcr.io/memes/devcontainers-features/tflint:1": {
-            "version": "0.60.0"
-        }
+        "ghcr.io/devcontainers-extra/features/direnv:1": {},
+        "ghcr.io/devcontainers-extra/features/opentofu:1": {},
+        "ghcr.io/devcontainers-extra/features/terraform-docs:1": {},
+        "ghcr.io/memes/devcontainers-features/tflint:1": {},
+        "ghcr.io/memes/devcontainers-features/google-cloud-cli:1": {},
+        "ghcr.io/memes/devcontainers-features/talisman:1": {}
     },
     "customizations": {
         "vscode": {
             "extensions": [
-                "Gruntfuggly.todo-tree",
                 "redhat.vscode-yaml",
                 "streetsidesoftware.code-spell-checker",
                 "opentofu.vscode-opentofu",
@@ -34,7 +22,7 @@
         }
     },
     "onCreateCommand": {
-        "install-pre-commit": "sudo sh -c 'apt update && apt install -y --no-install-recommends pipx && rm -rf /var/lib/apt/lists/*' && pipx install pre-commit",
+        "install-pre-commit": "sudo sh -c 'apt update && apt install -y --no-install-recommends fzf pipx && rm -rf /var/lib/apt/lists/*' && pipx install pre-commit",
         "modify-default-omz-plugins": ["/usr/bin/sed", "-i.onCreateCommand" , "-e", "/^plugins=/c\\plugins=(git dotenv)", "/home/vscode/.zshrc"]
     },
     "postCreateCommand": {

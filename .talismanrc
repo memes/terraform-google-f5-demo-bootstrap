@@ -35,4 +35,6 @@ fileignoreconfig:
   checksum: 793461d222c5e1fcb58d50070b177c6ddc45264b9eaa4c2ccba9dd34a8843ff2
 - filename: outputs.tf
   checksum: f859722f0c39e770de44cdcec049b81f25dbdae0d0f34445ff97925467777556
+- filename: .devcontainer/devcontainer-lock.json
+  checksum: 3f5c1d0cc98a070c8474b9ecf0387e4c3e8e407064de9ee81c6136d0f6588647
 version: "1.0"

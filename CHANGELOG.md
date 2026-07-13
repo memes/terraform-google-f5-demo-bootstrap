@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.1](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.6.0...v0.6.1) (2026-07-13)
+
+
+### Bug Fixes
+
+* Create AR service account only when needed ([33c89cc](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/33c89ccc17ec0964782376c45f1d806a9e2db4c6))
+* Make IaC bucket creation optional. ([33c89cc](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/33c89ccc17ec0964782376c45f1d806a9e2db4c6))
+* Make SSH deploy key optional ([33c89cc](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/33c89ccc17ec0964782376c45f1d806a9e2db4c6))
+
 ## [0.6.0](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.5.1...v0.6.0) (2026-04-15)
 
 

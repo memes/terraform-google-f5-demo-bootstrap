@@ -1,7 +1,7 @@
 output "state_bucket" {
-  value       = google_storage_bucket.state.name
+  value       = one([for bucket in google_storage_bucket.state : bucket.name])
   description = <<-EOD
-  The GCS bucket that will host automation related state.
+  The GCS bucket that will host automation related state, if created.
   EOD
 }
 
@@ -38,9 +38,9 @@ output "iac_sa" {
 }
 
 output "ar_sa" {
-  value       = google_service_account.ar.email
+  value       = one([for k, v in google_service_account.ar : v.email])
   description = <<-EOD
-  The fully-qualified email address of the Artifact Registry automation service account.
+  The fully-qualified email address of the Artifact Registry automation service account, if created.
   EOD
 }
 
@@ -66,18 +66,18 @@ output "ssh_clone_url" {
 }
 
 output "deploy_public_key" {
-  value       = tls_private_key.automation.public_key_openssh
+  value       = one([for k, v in tls_private_key.automation : v.public_key_openssh])
   sensitive   = true
   description = <<-EOD
-  The public deploy key.
+  The public deploy key, if created.
   EOD
 }
 
 output "deploy_private_key" {
-  value       = tls_private_key.automation.private_key_openssh
+  value       = one([for k, v in tls_private_key.automation : v.private_key_openssh])
   sensitive   = true
   description = <<-EOD
-  The private deploy key.
+  The private deploy key, if created.
   EOD
 }
 

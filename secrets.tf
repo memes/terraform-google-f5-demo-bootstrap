@@ -1,5 +1,5 @@
-# Working with NGINX+ images usually requires a JWT from F5. If provided
-# Create a secret for the NGINX+ JWT
+# Working with NGINX+ images usually requires a JWT from F5. If provided, create a secret for the NGINX+ JWT and allow
+# AR SA to read it.
 module "nginx_jwt" {
   for_each   = coalesce(var.nginx_jwt, "unspecified") == "unspecified" ? {} : { secret = var.nginx_jwt }
   source     = "memes/secret-manager/google"
@@ -7,7 +7,5 @@ module "nginx_jwt" {
   project_id = var.project_id
   id         = format("%s-nginx-jwt", var.name)
   secret     = each.value
-  accessors = [
-    google_service_account.ar.member,
-  ]
+  accessors  = [for k, v in google_service_account.ar : v.member]
 }

@@ -1,6 +1,5 @@
 # Creates an Artifact Registry instance for each repo type and assigns appropriate permissions to them.
 
-
 locals {
   ar_repos = merge(
     try(var.gcp_options.ar.oci, true) ? {
@@ -96,6 +95,7 @@ resource "google_artifact_registry_repository_iam_member" "writer" {
 # This creates the service account that may be used by CI services that need to write to registry without requiring full
 # IaC access.
 resource "google_service_account" "ar" {
+  for_each     = length(google_artifact_registry_repository.automation) > 0 ? { ar = true } : {}
   project      = var.project_id
   account_id   = format("%s-ar", var.name)
   display_name = "Artifact Registry automation service account"
@@ -105,31 +105,40 @@ resource "google_service_account" "ar" {
 
   depends_on = [
     google_project_service.apis,
+    google_artifact_registry_repository.automation,
+  ]
+}
+
+# For each repository, bind the AR service account as a writer.
+resource "google_artifact_registry_repository_iam_member" "ar" {
+  for_each = { for i, pair in setproduct([for k, v in google_artifact_registry_repository.automation : k], [for k, v in google_service_account.ar : v.member]) : tostring(i) => {
+    project    = google_artifact_registry_repository.automation[pair[0]].project
+    location   = google_artifact_registry_repository.automation[pair[0]].location
+    repository = google_artifact_registry_repository.automation[pair[0]].name
+    member     = pair[1]
+    }
+  }
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.repository
+  role       = "roles/artifactregistry.writer"
+  member     = each.value.member
+
+  depends_on = [
+    google_project_service.apis,
+    google_service_account.ar,
+    google_artifact_registry_repository.automation,
+    google_iam_workload_identity_pool.bots,
   ]
 }
 
 # Bind the workload identity user role on Artifact Registry service account for principals that satisfy the condition
 # that their respective provider has the custom 'ar_sa' attribute set to true.
 resource "google_service_account_iam_member" "ar" {
-  service_account_id = google_service_account.ar.name
+  for_each           = google_service_account.ar
+  service_account_id = each.value.name
   member             = format("principalSet://iam.googleapis.com/%s/attribute.ar_sa/enabled", google_iam_workload_identity_pool.bots.name)
   role               = "roles/iam.workloadIdentityUser"
-
-  depends_on = [
-    google_project_service.apis,
-    google_service_account.ar,
-    google_iam_workload_identity_pool.bots,
-  ]
-}
-
-# Allow OIDC principals with attribute 'artifact_registry="writer"' push access to Artifact Registry
-resource "google_artifact_registry_repository_iam_member" "ar" {
-  for_each   = google_artifact_registry_repository.automation
-  project    = each.value.project
-  location   = each.value.location
-  repository = each.value.name
-  role       = "roles/artifactregistry.writer"
-  member     = google_service_account.ar.member
 
   depends_on = [
     google_project_service.apis,

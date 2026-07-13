@@ -5,7 +5,7 @@ resource "github_repository" "automation" {
   visibility         = try(var.github_options.private_repo, false) ? "private" : "public"
   archive_on_destroy = try(var.github_options.archive_on_destroy, true)
   dynamic "template" {
-    for_each = coalesce(try(var.github_options.template, "memes/terraform-google-f5-demo-bootstrap-template"), "unspecified") == "unspecified" ? {} : { template = { owner = reverse(split("/", var.github_options.template))[1], name = reverse(split("/", var.github_options.template))[0] } }
+    for_each = coalesce(try(var.github_options.template, "memes/terraform-google-f5-demo-bootstrap-template"), "unspecified") == "unspecified" ? {} : { template = { owner = reverse(split("/", try(var.github_options.template, "memes/terraform-google-f5-demo-bootstrap-template")))[1], name = reverse(split("/", try(var.github_options.template, "memes/terraform-google-f5-demo-bootstrap-template")))[0] } }
     content {
       owner                = template.value.owner
       repository           = template.value.name
@@ -16,7 +16,7 @@ resource "github_repository" "automation" {
 
 # Invite collaborators to the new repo
 resource "github_repository_collaborator" "collaborators" {
-  for_each   = try(var.github_options.collaborators, [])
+  for_each   = try(length(var.github_options.collaborators), 0) > 0 ? var.github_options.collaborators : toset([])
   repository = github_repository.automation.name
   permission = "push"
   username   = each.value
@@ -24,14 +24,16 @@ resource "github_repository_collaborator" "collaborators" {
 
 # Create a deploy key
 resource "tls_private_key" "automation" {
+  for_each    = try(var.github_options.ssh_deploy_key, false) ? { key = true } : {}
   algorithm   = "ECDSA"
   ecdsa_curve = "P384"
 }
 
 resource "github_repository_deploy_key" "automation" {
+  for_each   = tls_private_key.automation
   repository = github_repository.automation.name
   title      = "Automation deploy key"
-  key        = tls_private_key.automation.public_key_openssh
+  key        = each.value.public_key_openssh
   read_only  = false
 }
 
@@ -50,9 +52,9 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "attribute.repository"       = "assertion.repository"
     "attribute.repository_owner" = "assertion.repository_owner"
     "google.subject"             = "assertion.sub"
-    "attribute.ar_sa"            = "'enabled'"
-    "attribute.infra_manager"    = "'enabled'"
-    "attribute.cloud_deploy"     = "'enabled'"
+    "attribute.ar_sa"            = try(length(google_service_account.ar), 0) > 0 ? "'enabled'" : "'disabled'"
+    "attribute.infra_manager"    = try(var.gcp_options.enable_infra_manager, true) ? "'enabled'" : "'disabled'"
+    "attribute.cloud_deploy"     = try(var.gcp_options.enable_cloud_deploy, true) ? "'enabled'" : "'disabled'"
   }
   # Only allow integration with the bootstrapped repo
   attribute_condition = format("attribute.repository_owner == '%s' && attribute.repository == '%s'", split("/", github_repository.automation.full_name)[0], github_repository.automation.full_name)
@@ -65,19 +67,21 @@ resource "google_iam_workload_identity_pool_provider" "github" {
   }
   depends_on = [
     google_project_service.apis,
+    google_service_account.ar,
+    google_iam_workload_identity_pool.bots,
   ]
 }
 
 resource "github_actions_secret" "provider_id" {
-  repository      = github_repository.automation.name
-  secret_name     = "WORKLOAD_IDENTITY_PROVIDER_ID"
-  plaintext_value = google_iam_workload_identity_pool_provider.github.name
+  repository  = github_repository.automation.name
+  secret_name = "WORKLOAD_IDENTITY_PROVIDER_ID"
+  value       = google_iam_workload_identity_pool_provider.github.name
 }
 
 resource "github_actions_secret" "iac_sa" {
-  repository      = github_repository.automation.name
-  secret_name     = "IAC_SERVICE_ACCOUNT"
-  plaintext_value = google_service_account.iac.email
+  repository  = github_repository.automation.name
+  secret_name = "IAC_SERVICE_ACCOUNT"
+  value       = google_service_account.iac.email
 
   depends_on = [
     google_project_service.apis,
@@ -86,9 +90,10 @@ resource "github_actions_secret" "iac_sa" {
 }
 
 resource "github_actions_secret" "ar_sa" {
-  repository      = github_repository.automation.name
-  secret_name     = "AR_SERVICE_ACCOUNT"
-  plaintext_value = google_service_account.ar.email
+  for_each    = google_service_account.ar
+  repository  = github_repository.automation.name
+  secret_name = "AR_SERVICE_ACCOUNT"
+  value       = each.value.email
 
   depends_on = [
     google_project_service.apis,
@@ -97,10 +102,10 @@ resource "github_actions_secret" "ar_sa" {
 }
 
 resource "github_actions_secret" "deploy_sa" {
-  for_each        = google_service_account.deploy
-  repository      = github_repository.automation.name
-  secret_name     = "DEPLOY_SERVICE_ACCOUNT"
-  plaintext_value = each.value.email
+  for_each    = google_service_account.deploy
+  repository  = github_repository.automation.name
+  secret_name = "DEPLOY_SERVICE_ACCOUNT"
+  value       = each.value.email
 
   depends_on = [
     google_project_service.apis,

@@ -3,6 +3,7 @@
     "version": "0.2",
     "language": "en",
     "words": [
+        "alltrue",
         "artifactregistry",
         "cloudbuild",
         "clouddeploy",
@@ -28,7 +29,10 @@
         "opencontainers",
         "pastebin",
         "pipx",
+        "secretmanager",
         "serviceusage",
+        "tflint",
+        "tftest",
         "thumbsup",
         "trimpath",
         "venv",
@@ -38,5 +42,10 @@
     ],
     "flagWords": [
         "hte"
+    ],
+    "ignorePaths": [
+        ".devcontainer/devcontainer.json",
+        ".gitignore",
+        ".pre-commit-config.yaml"
     ]
 }

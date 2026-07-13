@@ -48,6 +48,7 @@ variable "github_options" {
     template           = optional(string, "memes/terraform-google-f5-demo-bootstrap-template")
     archive_on_destroy = optional(bool, true)
     collaborators      = optional(set(string))
+    ssh_deploy_key     = optional(bool, false)
   })
   nullable = true
   default = {
@@ -57,6 +58,7 @@ variable "github_options" {
     template           = "memes/terraform-google-f5-demo-bootstrap-template"
     archive_on_destroy = true
     collaborators      = []
+    ssh_deploy_key     = false
   }
   description = <<-EOD
   Defines the parameters for the GitHub repository to create for the demo. By default the GitHub repo will be public,
@@ -71,13 +73,7 @@ variable "gcp_options" {
     enable_cloud_deploy         = optional(bool, true)
     services_disable_on_destroy = optional(bool, false)
     disable_dependent_services  = optional(bool, false)
-    bucket = optional(object({
-      class          = string
-      location       = string
-      force_destroy  = bool
-      uniform_access = bool
-      versioning     = bool
-    }))
+    create_state_bucket         = optional(bool, true)
     ar = optional(object({
       location = string
       oci      = bool
@@ -92,13 +88,7 @@ variable "gcp_options" {
     enable_cloud_deploy         = true
     services_disable_on_destroy = false
     disable_dependent_services  = false
-    bucket = {
-      class          = "STANDARD"
-      location       = "US"
-      force_destroy  = true
-      uniform_access = true
-      versioning     = true
-    }
+    create_state_bucket         = true
     ar = {
       location = "us"
       oci      = true
@@ -188,5 +178,27 @@ variable "iac_options" {
   default     = null
   description = <<-EOD
   An optional set of flags to apply to the IaC account.
+  EOD
+}
+
+
+variable "state_bucket_options" {
+  type = object({
+    class          = optional(string, "STANDARD")
+    location       = optional(string, "US")
+    force_destroy  = optional(bool, true)
+    uniform_access = optional(bool, true)
+    versioning     = optional(bool, true)
+  })
+  nullable = true
+  default = {
+    class          = "STANDARD"
+    location       = "US"
+    force_destroy  = true
+    uniform_access = true
+    versioning     = true
+  }
+  description = <<-EOD
+  Defines the parameters for the IaC GCS state bucket, if enabled in gcp_options.
   EOD
 }

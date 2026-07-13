@@ -3,19 +3,19 @@ terraform {
   required_providers {
     github = {
       source  = "integrations/github"
-      version = ">= 6.3"
+      version = ">= 6.12"
     }
     google = {
       source  = "hashicorp/google"
-      version = ">= 7.28"
+      version = ">= 7.31"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = ">= 6.9"
+      version = ">= 7.31"
     }
     tls = {
       source  = "hashicorp/tls"
-      version = ">= 4.0"
+      version = ">= 4.2"
     }
   }
 }
@@ -26,17 +26,24 @@ data "google_storage_project_service_account" "default" {
 
 locals {
   base_apis = [
-    "artifactregistry.googleapis.com",
-    "containerscanning.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
     "serviceusage.googleapis.com",
-    "storage-api.googleapis.com",
     "sts.googleapis.com",
+  ]
+  # APIs required for GCS
+  storage_apis = [
+    "storage-api.googleapis.com",
+  ]
+  # APIs required for Artifact Registry
+  ar_apis = [
+    "artifactregistry.googleapis.com",
+    "containerscanning.googleapis.com",
   ]
   # APIs required for Infrastructure Manager
   infra_manager_apis = [
     "config.googleapis.com",
+    "storage-api.googleapis.com",
   ]
   # APIs required for Cloud Deploy
   cloud_deploy_apis = [
@@ -57,6 +64,8 @@ locals {
 resource "google_project_service" "apis" {
   for_each = { for api in setunion(
     local.base_apis,
+    try(var.gcp_options.create_state_bucket, true) ? local.storage_apis : [],
+    try(var.gcp_options.ar.oci, true) || try(var.gcp_options.ar.deb, false) || try(var.gcp_options.rpm, false) ? local.ar_apis : [],
     try(var.gcp_options.enable_infra_manager, true) ? local.infra_manager_apis : [],
     try(var.gcp_options.enable_cloud_deploy, true) ? local.cloud_deploy_apis : [],
     try(var.gcp_options.kms, false) ? local.kms_apis : [],
@@ -219,7 +228,7 @@ resource "google_project_iam_member" "infra_manager" {
 
 # Allow OIDC identities with the custom attribute infra_manager = 'enabled' to act as IaC service account.
 resource "google_service_account_iam_member" "iac_infra_manager" {
-  for_each           = var.gcp_options.enable_infra_manager ? { member = format("principalSet://iam.googleapis.com/%s/attribute.infra_manager/enabled", google_iam_workload_identity_pool.bots.name) } : {}
+  for_each           = try(var.gcp_options.enable_infra_manager, true) ? { member = format("principalSet://iam.googleapis.com/%s/attribute.infra_manager/enabled", google_iam_workload_identity_pool.bots.name) } : {}
   service_account_id = google_service_account.iac.name
   member             = each.value
   role               = "roles/iam.serviceAccountUser"
@@ -246,7 +255,7 @@ resource "google_service_account_iam_member" "deploy" {
   ]
 }
 
-# Allow OIDC identities with the custom attribute cloud_deploy = 'enabled' to release deployments.
+# Allow OIDC identities with the custom attribute deploy_sa = 'enabled' to release deployments.
 resource "google_project_iam_member" "cloud_deploy" {
   for_each = try(var.gcp_options.enable_cloud_deploy, true) ? { member = format("principalSet://iam.googleapis.com/%s/attribute.deploy_sa/enabled", google_iam_workload_identity_pool.bots.name) } : {}
   project  = var.project_id
@@ -332,24 +341,24 @@ resource "google_kms_crypto_key_iam_member" "gcs" {
   ]
 }
 
-# Create a bucket for automation state; defaults are sane for Terraform but can
-# be overridden as needed.
+# Create a bucket for automation state; defaults are sane for Terraform but can be overridden as needed.
 resource "google_storage_bucket" "state" {
+  for_each                    = try(var.gcp_options.create_state_bucket, true) ? { state = var.state_bucket_options } : {}
   project                     = var.project_id
   name                        = format("%s-automation", var.name)
-  force_destroy               = try(var.gcp_options.bucket.force_destroy, true)
+  force_destroy               = try(each.value.force_destroy, true)
   labels                      = var.labels
-  location                    = try(var.gcp_options.bucket.location, "US")
-  storage_class               = try(var.gcp_options.bucket.class, "STANDARD")
-  uniform_bucket_level_access = try(var.gcp_options.bucket.uniform_access, true)
+  location                    = try(each.value.location, "US")
+  storage_class               = try(each.value.class, "STANDARD")
+  uniform_bucket_level_access = try(each.value.uniform_access, true)
   public_access_prevention    = "enforced"
   versioning {
-    enabled = try(var.gcp_options.bucket.versioning, false)
+    enabled = try(each.value.versioning, true)
   }
   dynamic "encryption" {
     for_each = google_kms_crypto_key.gcs
     content {
-      default_kms_key_name = encyrption.value.id
+      default_kms_key_name = encryption.value.id
     }
   }
 
@@ -361,9 +370,10 @@ resource "google_storage_bucket" "state" {
 
 # Make the IaC automation service account an admin of the bootstrapped bucket.
 resource "google_storage_bucket_iam_member" "admin" {
-  bucket = google_storage_bucket.state.name
-  role   = "roles/storage.admin"
-  member = google_service_account.iac.member
+  for_each = google_storage_bucket.state
+  bucket   = each.value.name
+  role     = "roles/storage.admin"
+  member   = google_service_account.iac.member
 
   depends_on = [
     google_project_service.apis,
@@ -373,11 +383,12 @@ resource "google_storage_bucket_iam_member" "admin" {
 
 # Ensure the Cloud Deploy execution service account can view and create objects in the bootstrapped bucket.
 resource "google_storage_bucket_iam_member" "deploy" {
-  for_each = { for i, pair in setproduct([for sa in google_service_account.deploy : sa.member], ["roles/storage.objectViewer", "roles/storage.objectCreator"]) : tostring(i) => {
-    member = pair[0]
-    role   = pair[1]
+  for_each = { for i, combo in setproduct([for bucket in google_storage_bucket.state : bucket.name], [for sa in google_service_account.deploy : sa.member], ["roles/storage.objectViewer", "roles/storage.objectCreator"]) : tostring(i) => {
+    bucket = combo[0]
+    member = combo[1]
+    role   = combo[2]
   } }
-  bucket = google_storage_bucket.state.name
+  bucket = each.value.bucket
   role   = each.value.role
   member = each.value.member
 

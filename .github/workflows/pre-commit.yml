@@ -37,7 +37,7 @@ jobs:
           cache: true
       - name: Install opentofu
         uses: opentofu/setup-opentofu@v2
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
       - uses: pre-commit/action@v3.0.1
   hadolint:
     runs-on: ubuntu-latest

@@ -13,10 +13,10 @@ This Terraform module creates an opinionated automation for an F5 on GCP demo.
 | Name | Version |
 | ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5 |
-| <a name="requirement_github"></a> [github](#requirement\_github) | >= 6.12 |
-| <a name="requirement_google"></a> [google](#requirement\_google) | >= 7.31 |
-| <a name="requirement_google-beta"></a> [google-beta](#requirement\_google-beta) | >= 7.31 |
-| <a name="requirement_tls"></a> [tls](#requirement\_tls) | >= 4.2 |
+| <a name="requirement_github"></a> [github](#requirement\_github) | >= 6.13 |
+| <a name="requirement_google"></a> [google](#requirement\_google) | >= 7.41 |
+| <a name="requirement_google-beta"></a> [google-beta](#requirement\_google-beta) | >= 7.41 |
+| <a name="requirement_tls"></a> [tls](#requirement\_tls) | >= 4.3 |
 
 ## Modules
 

@@ -3,19 +3,19 @@ terraform {
   required_providers {
     github = {
       source  = "integrations/github"
-      version = ">= 6.12"
+      version = ">= 6.13"
     }
     google = {
       source  = "hashicorp/google"
-      version = ">= 7.31"
+      version = ">= 7.41"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = ">= 7.31"
+      version = ">= 7.41"
     }
     tls = {
       source  = "hashicorp/tls"
-      version = ">= 4.2"
+      version = ">= 4.3"
     }
   }
 }

@@ -1,6 +1,6 @@
 {
     "name": "memes-terraform-google-f5-demo-bootstrap",
-    "image": "mcr.microsoft.com/devcontainers/base:debian",
+    "dockerFile": "Dockerfile",
     "features": {
         "ghcr.io/devcontainers-extra/features/direnv:1": {},
         "ghcr.io/devcontainers-extra/features/opentofu:1": {},
@@ -29,6 +29,9 @@
         "pre-commit-hook": "pre-commit install --hook-type commit-msg --hook-type pre-commit"
     },
     "containerUser": "vscode",
+    "containerEnv": {
+        "CLOUDSDK_CORE_CUSTOM_CA_CERTS_FILE": "/etc/ssl/certs/ca-certificates.crt"
+    },
     "updateRemoteUserUID": true,
     "mounts": [
         "source=${localEnv:HOME}/.config/gcloud,target=/home/vscode/.config/gcloud,type=bind"

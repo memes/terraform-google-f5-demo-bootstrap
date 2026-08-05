@@ -20,3 +20,6 @@ terraform.tfvars*
 
 # Ignore generated kubeconfigs
 *.kubeconfig
+
+# Ignore corp CA bundle
+.devcontainer/*pem

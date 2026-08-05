@@ -3,7 +3,7 @@ ARG ATLANTIS_TAG=v0.30.0
 FROM ghcr.io/runatlantis/atlantis:${ATLANTIS_TAG}
 COPY --chown=root:root --chmod=0755 extract-blindfold.sh /docker-entrypoint.d/extract-blindfold.sh
 
-# Install supporting tools to /usr/local/bin - need to be root to do this
+# hadolint ignore=DL3066 # Install supporting tools to /usr/local/bin - need to be root to do this
 USER root
 
 ARG UNSEAL_VER=1.2.1
@@ -32,5 +32,5 @@ chmod 0755 /usr/local/bin/vesctl
 chown root:root /usr/local/bin/vesctl
 EOS
 
-# Switch back to atlantis account
+# hadolint ignore=DL3066 # Switch back to atlantis account
 USER atlantis

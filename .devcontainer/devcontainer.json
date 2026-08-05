@@ -1,13 +1,14 @@
 {
     "name": "memes-terraform-google-f5-demo-bootstrap",
-    "image": "mcr.microsoft.com/devcontainers/base:debian",
+    "dockerFile": "Dockerfile",
     "features": {
         "ghcr.io/devcontainers-extra/features/direnv:1": {},
         "ghcr.io/devcontainers-extra/features/opentofu:1": {},
         "ghcr.io/devcontainers-extra/features/terraform-docs:1": {},
-        "ghcr.io/memes/devcontainers-features/tflint:1": {},
         "ghcr.io/memes/devcontainers-features/google-cloud-cli:1": {},
-        "ghcr.io/memes/devcontainers-features/talisman:1": {}
+        "ghcr.io/memes/devcontainers-features/hadolint:1": {},
+        "ghcr.io/memes/devcontainers-features/talisman:1": {},
+        "ghcr.io/memes/devcontainers-features/tflint:1": {}
     },
     "customizations": {
         "vscode": {

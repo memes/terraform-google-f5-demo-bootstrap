@@ -20,6 +20,11 @@
       "resolved": "ghcr.io/memes/devcontainers-features/google-cloud-cli@sha256:7869b755bb656bfa43c8d887d3bc4931b3bfed36c5fe6d79afe41a96893534d8",
       "integrity": "sha256:7869b755bb656bfa43c8d887d3bc4931b3bfed36c5fe6d79afe41a96893534d8"
     },
+    "ghcr.io/memes/devcontainers-features/hadolint:1": {
+      "version": "1.0.1",
+      "resolved": "ghcr.io/memes/devcontainers-features/hadolint@sha256:c97fbd795537a3526164e046a4242dbfe87273496bc34555988dede11708299d",
+      "integrity": "sha256:c97fbd795537a3526164e046a4242dbfe87273496bc34555988dede11708299d"
+    },
     "ghcr.io/memes/devcontainers-features/talisman:1": {
       "version": "1.1.1",
       "resolved": "ghcr.io/memes/devcontainers-features/talisman@sha256:c14d0e3e4bf494629461dc2ad0785b3613451460ec1dc3b58be3ba7e861fff0f",

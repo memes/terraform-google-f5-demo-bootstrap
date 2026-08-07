@@ -15,9 +15,22 @@ mock_provider "google" {
 }
 mock_provider "google-beta" {}
 mock_provider "github" {
+  mock_data "github_user" {
+    defaults = {
+      login = "mock_user"
+      id    = "11111"
+    }
+  }
+  mock_data "github_organization" {
+    defaults = {
+      login = "mock_org"
+      id    = "22222"
+    }
+  }
   mock_resource "github_repository" {
     defaults = {
       full_name = "mock/repo"
+      repo_id   = "33333"
     }
   }
 }
@@ -459,7 +472,7 @@ run "github" {
     error_message = "Expected GitHub OIDC provider to have cloud_deploy attribute set to 'enabled'."
   }
   assert {
-    condition     = google_iam_workload_identity_pool_provider.github.attribute_condition == "attribute.repository_owner == 'mock' && attribute.repository == 'mock/repo'"
+    condition     = google_iam_workload_identity_pool_provider.github.attribute_condition == "assertion.sub.startsWith('repo:mock_user@11111/default-test@33333:')"
     error_message = "Expected GitHub OIDC provider attribute_condition does not meet expectations."
   }
 
@@ -487,6 +500,50 @@ run "github" {
   assert {
     condition     = alltrue([for k, v in github_actions_variable.nginx_jwt : v.variable_name == "NGINX_JWT_SECRET"])
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
+  }
+
+  # Actions permissions
+  assert {
+    condition     = github_actions_repository_permissions.automation.enabled
+    error_message = "Expected GitHub actions to be enabled in repo."
+  }
+  assert {
+    condition     = !github_actions_repository_permissions.automation.sha_pinning_required
+    error_message = "Expected GitHub actions to NOT require SHA pinning."
+  }
+  assert {
+    condition = (
+      github_actions_repository_permissions.automation.allowed_actions == "selected" &&
+      try(length(github_actions_repository_permissions.automation.allowed_actions_config), 0) == 1
+    )
+    error_message = "Expected GitHub allowed repo actions to be configured with 1 config set."
+  }
+  assert {
+    condition = alltrue([for config in github_actions_repository_permissions.automation.allowed_actions_config :
+      try(length(config.patterns_allowed), 0) > 0 &&
+      alltrue([for allowed in config.patterns_allowed : contains([
+        "GoogleCloudPlatform/release-please-action@*",
+        "google-github-actions/auth@*",
+        "google-github-actions/create-cloud-deploy-release@*",
+        "google-github-actions/setup-gcloud@*",
+        "hashicorp/setup-terraform@*",
+        "jaxxstorm/action-install-gh-release@*",
+        "opentofu/setup-opentofu@*",
+        "pre-commit/action@*",
+        "terraform-linters/setup-tflint@*",
+      ], allowed)])
+    ])
+    error_message = "Expected GitHub allowed repo actions patterns to meet expectations, got '${jsonencode(github_actions_repository_permissions.automation.allowed_actions_config.*.patterns_allowed)}."
+  }
+
+  # Workflow permissions
+  assert {
+    condition     = github_workflow_repository_permissions.automation.default_workflow_permissions == "read"
+    error_message = "Expected GitHub workflow permissions for GITHUB_TOKEN to be 'read', got '${github_workflow_repository_permissions.automation.default_workflow_permissions}'."
+  }
+  assert {
+    condition     = github_workflow_repository_permissions.automation.can_approve_pull_request_reviews
+    error_message = "Expected GitHub workflow permissions to allow PR creation and approval."
   }
 }
 

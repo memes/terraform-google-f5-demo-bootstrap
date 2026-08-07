@@ -36,11 +36,11 @@ fileignoreconfig:
 - filename: outputs.tf
   checksum: a1b8538dffcba5b868c46de97de12ee66489843e06d230b3a6b654ad31b7172d
 - filename: .devcontainer/devcontainer-lock.json
-  checksum: 35520af407bfce71b8f3c90efd7d3928447b624f05708d256ffc114ee300b95f
+  checksum: 14ce6f8f8d4200cab7ec5099b8803761574a41f73e63368ece6a63a31ad9607d
 - filename: tests/default.tftest.hcl
   checksum: c8cda40836fc86c93a127b91e983c158a42da2b107e41a2bfc7a11a4ba520584
 - filename: tests/github_options.tftest.hcl
-  checksum: 150ab33266656c652a9e374e0a2da4f8c87332555c91149a9739dd34001d9f7b
+  checksum: 94f97d46f63d2ed2635dc816f4d0a8722034a9d64795930c20392a11f24408c2
 - filename: tests/gcp_variables.tftest.hcl
   checksum: 75ae9d96dc7da55f568d2602dcf087c52533e028eb67d08fdef449cad5795179
 version: "1.0"

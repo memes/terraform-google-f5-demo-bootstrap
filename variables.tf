@@ -49,6 +49,7 @@ variable "github_options" {
     archive_on_destroy = optional(bool, true)
     collaborators      = optional(set(string))
     ssh_deploy_key     = optional(bool, false)
+    org                = optional(string)
   })
   nullable = true
   default = {
@@ -59,6 +60,7 @@ variable "github_options" {
     archive_on_destroy = true
     collaborators      = []
     ssh_deploy_key     = false
+    org                = null
   }
   description = <<-EOD
   Defines the parameters for the GitHub repository to create for the demo. By default the GitHub repo will be public,

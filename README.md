@@ -6,6 +6,52 @@
 
 This Terraform module creates an opinionated automation for an F5 on GCP demo.
 
+## GitHub immutable OIDC subject claims and GitHub organizations
+
+As of July 15 2026, all new GitHub repositories will use [immutable subject claims](https://docs.github.com/en/actions/reference/security/oidc#immutable-subject-claims)
+for OIDC. This changes the format of the OIDC subject set by GitHub, and the Workload Identity assertion used to
+validate the OIDC claim. The module can automatically determine the format of the claim if the repo is associated with
+a personal GitHub account, but if the repo belongs to a GitHub organization, the module must be informed so it can
+validate appropriately.
+
+> NOTE: If you have an existing bootstrapped repo created before July 15, 2026, you will need to opt in to immutable
+> claims or GitHub integration with Workload Identity will be broken regardless of repo owner being an individual or
+> organization.
+
+### Recommended pattern for repos owned by an organization
+
+When trying to bootstrapping a new repo, or updating a prior bootstrapped repo, that is hosted in a GitHub organization
+use the `github_options.org` field to match the target organization in the `github` provider. This avoids a potential
+mismatch where the GitHub provider chooses an individual or organization target based on environment variables, which
+the module does not know about.
+
+E.g., to target a repo in `F5DevCentral` organization, in your `main.tf`:
+
+```hcl
+terraform {
+  required_version = ">= 1.5"
+  required_providers {
+    ...
+  }
+}
+
+provider "github" {
+  # Explicitly set the target organization used by provider when creating/updating repository.
+  owner = "F5DevCentral"
+}
+
+module "bootstrap" {
+  source            = "registry.terraform.io/memes/f5-demo-bootstrap/google"
+  ...
+  github_options    = {
+    # Ensure that the Workload Identity assertion uses the correct values for the immutable OIDC subject claim
+    org = "F5DevCentral"
+    ...
+  }
+  ...
+}
+```
+
 <!-- markdownlint-disable MD033 MD034 -->
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
@@ -28,6 +74,7 @@ This Terraform module creates an opinionated automation for an F5 on GCP demo.
 
 | Name | Type |
 | ---- | ---- |
+| [github_actions_repository_permissions.automation](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_repository_permissions) | resource |
 | [github_actions_secret.ar_sa](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_secret) | resource |
 | [github_actions_secret.deploy_sa](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_secret) | resource |
 | [github_actions_secret.iac_sa](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_secret) | resource |
@@ -38,6 +85,7 @@ This Terraform module creates an opinionated automation for an F5 on GCP demo.
 | [github_repository.automation](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository) | resource |
 | [github_repository_collaborator.collaborators](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_collaborator) | resource |
 | [github_repository_deploy_key.automation](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_deploy_key) | resource |
+| [github_workflow_repository_permissions.automation](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/workflow_repository_permissions) | resource |
 | [google-beta_google_project_service_identity.ids](https://registry.terraform.io/providers/hashicorp/google-beta/latest/docs/resources/google_project_service_identity) | resource |
 | [google_artifact_registry_repository.automation](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/artifact_registry_repository) | resource |
 | [google_artifact_registry_repository_iam_member.ar](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/artifact_registry_repository_iam_member) | resource |
@@ -70,6 +118,8 @@ This Terraform module creates an opinionated automation for an F5 on GCP demo.
 | [google_storage_bucket_iam_member.admin](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
 | [google_storage_bucket_iam_member.deploy](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
 | [tls_private_key.automation](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/private_key) | resource |
+| [github_organization.default](https://registry.terraform.io/providers/integrations/github/latest/docs/data-sources/organization) | data source |
+| [github_user.default](https://registry.terraform.io/providers/integrations/github/latest/docs/data-sources/user) | data source |
 | [google_storage_project_service_account.default](https://registry.terraform.io/providers/hashicorp/google/latest/docs/data-sources/storage_project_service_account) | data source |
 
 ## Inputs
@@ -81,7 +131,7 @@ This Terraform module creates an opinionated automation for an F5 on GCP demo.
 | <a name="input_bootstrap_apis"></a> [bootstrap\_apis](#input\_bootstrap\_apis) | An optional set of Google Cloud APIs to enable during bootstrap, in addition<br/>to those required for bootstrap resources. Default is an empty set. | `set(string)` | `[]` | no |
 | <a name="input_cloud_deploy_roles"></a> [cloud\_deploy\_roles](#input\_cloud\_deploy\_roles) | An optional set of IAM roles to assign to the Cloud Deploy automation service account, if it is created. Default is an<br/>empty set.<br/>E.g. to support deploying to GKE:<br/>cloud\_deploy\_roles = [<br/>  "roles/container.developer",<br/>] | `set(string)` | `[]` | no |
 | <a name="input_gcp_options"></a> [gcp\_options](#input\_gcp\_options) | Defines the parameters for the supporting Google Cloud resources that may not be essential to the demo. By default<br/>service accounts and resources to support Infrastructure Manager (managed Terraform IaC) and Cloud Deploy (managed GKE<br/>and Cloud Run deployments) are created, along with a US Cloud Storage bucket to contain the Terraform state. An<br/>Artifact Repository will be created for OCI containers, but not DEB or RPM repos. Use this variable to override one or<br/>more of these defaults as needed. | <pre>object({<br/>    enable_infra_manager        = optional(bool, true)<br/>    enable_cloud_deploy         = optional(bool, true)<br/>    services_disable_on_destroy = optional(bool, false)<br/>    disable_dependent_services  = optional(bool, false)<br/>    create_state_bucket         = optional(bool, true)<br/>    ar = optional(object({<br/>      location = string<br/>      oci      = bool<br/>      deb      = bool<br/>      rpm      = bool<br/>    }))<br/>    kms = optional(bool, false)<br/>  })</pre> | <pre>{<br/>  "ar": {<br/>    "deb": false,<br/>    "location": "us",<br/>    "oci": true,<br/>    "rpm": false<br/>  },<br/>  "create_state_bucket": true,<br/>  "disable_dependent_services": false,<br/>  "enable_cloud_deploy": true,<br/>  "enable_infra_manager": true,<br/>  "kms": false,<br/>  "services_disable_on_destroy": false<br/>}</pre> | no |
-| <a name="input_github_options"></a> [github\_options](#input\_github\_options) | Defines the parameters for the GitHub repository to create for the demo. By default the GitHub repo will be public,<br/>named from the `name` variable and populated from `memes/terraform-google-f5-demo-bootstrap-template` repo. Use this<br/>variable to override one or more of these defaults as needed. | <pre>object({<br/>    private_repo       = optional(bool, false)<br/>    name               = optional(string)<br/>    description        = optional(string, "Bootstrapped automation repository")<br/>    template           = optional(string, "memes/terraform-google-f5-demo-bootstrap-template")<br/>    archive_on_destroy = optional(bool, true)<br/>    collaborators      = optional(set(string))<br/>    ssh_deploy_key     = optional(bool, false)<br/>  })</pre> | <pre>{<br/>  "archive_on_destroy": true,<br/>  "collaborators": [],<br/>  "description": "Bootstrapped automation repository",<br/>  "name": "",<br/>  "private_repo": false,<br/>  "ssh_deploy_key": false,<br/>  "template": "memes/terraform-google-f5-demo-bootstrap-template"<br/>}</pre> | no |
+| <a name="input_github_options"></a> [github\_options](#input\_github\_options) | Defines the parameters for the GitHub repository to create for the demo. By default the GitHub repo will be public,<br/>named from the `name` variable and populated from `memes/terraform-google-f5-demo-bootstrap-template` repo. Use this<br/>variable to override one or more of these defaults as needed. | <pre>object({<br/>    private_repo       = optional(bool, false)<br/>    name               = optional(string)<br/>    description        = optional(string, "Bootstrapped automation repository")<br/>    template           = optional(string, "memes/terraform-google-f5-demo-bootstrap-template")<br/>    archive_on_destroy = optional(bool, true)<br/>    collaborators      = optional(set(string))<br/>    ssh_deploy_key     = optional(bool, false)<br/>    org                = optional(string)<br/>  })</pre> | <pre>{<br/>  "archive_on_destroy": true,<br/>  "collaborators": [],<br/>  "description": "Bootstrapped automation repository",<br/>  "name": "",<br/>  "org": null,<br/>  "private_repo": false,<br/>  "ssh_deploy_key": false,<br/>  "template": "memes/terraform-google-f5-demo-bootstrap-template"<br/>}</pre> | no |
 | <a name="input_iac_impersonators"></a> [iac\_impersonators](#input\_iac\_impersonators) | A list of fully-qualified IAM accounts that will be allowed to impersonate the IaC automation service account. If no<br/>accounts are supplied, impersonation will not be setup by the script.<br/>E.g.<br/>impersonators = [<br/>  "group:devsecops@example.com",<br/>  "group:admins@example.com",<br/>  "user:jane@example.com",<br/>  "serviceAccount:ci-cd@project.iam.gserviceaccount.com",<br/>] | `list(string)` | `[]` | no |
 | <a name="input_iac_options"></a> [iac\_options](#input\_iac\_options) | An optional set of flags to apply to the IaC account. | <pre>object({<br/>    enable_workload_identity_pool_admin = optional(bool, false)<br/>  })</pre> | `null` | no |
 | <a name="input_iac_roles"></a> [iac\_roles](#input\_iac\_roles) | An optional set of IAM roles to assign to the IaC automation service account.<br/>Default is an empty set. | `set(string)` | `[]` | no |

@@ -1,14 +1,14 @@
 #
 
-![GitHub release](https://img.shields.io/github/v/release/memes/f5-google-demo-bootstrap?sort=semver)
-![Maintenance](https://img.shields.io/maintenance/yes/2026)
+![GitHub release](https://img.shields.io/github/v/release/memes/terraform-google-f5-demo-bootstrap?sort=semver)
+![GitHub last commit](https://img.shields.io/github/last-commit/memes/terraform-google-f5-demo-bootstrap)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 This Terraform module creates an opinionated automation for an F5 on GCP demo.
 
 ## GitHub immutable OIDC subject claims and GitHub organizations
 
-As of July 15 2026, all new GitHub repositories will use [immutable subject claims](https://docs.github.com/en/actions/reference/security/oidc#immutable-subject-claims)
+As of July 15 2026, all new GitHub repositories use [immutable subject claims](https://docs.github.com/en/actions/reference/security/oidc#immutable-subject-claims)
 for OIDC. This changes the format of the OIDC subject set by GitHub, and the Workload Identity assertion used to
 validate the OIDC claim. The module can automatically determine the format of the claim if the repo is associated with
 a personal GitHub account, but if the repo belongs to a GitHub organization, the module must be informed so it can
@@ -16,7 +16,8 @@ validate appropriately.
 
 > NOTE: If you have an existing bootstrapped repo created before July 15, 2026, you will need to opt in to immutable
 > claims or GitHub integration with Workload Identity will be broken regardless of repo owner being an individual or
-> organization.
+> organization. See the OIDC settings page at https://github.com/OWNER/REPO/settings/actions/oidc-configuration,
+> substituting the correct value for OWNER and REPO of the existing bootstrapped repo.
 
 ### Recommended pattern for repos owned by an organization
 
@@ -51,6 +52,15 @@ module "bootstrap" {
   ...
 }
 ```
+
+## Further Github workflow hardening
+
+Additional hardening steps that cannot yet be managed by this module:
+
+* Manually enforce maintainer approval for workflows to limit risk from unauthorized PRs. See *Approval for
+  running fork pull request workflows from contributors* section of repo config at
+  https://github.com/OWNER/REPO/settings/actions and
+  [provider issue 2108](https://github.com/integrations/terraform-provider-github/issues/2108).
 
 <!-- markdownlint-disable MD033 MD034 -->
 <!-- BEGIN_TF_DOCS -->

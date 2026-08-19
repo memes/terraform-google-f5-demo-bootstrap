@@ -292,6 +292,18 @@ run "gcp_options_null" {
     condition     = google_artifact_registry_repository.automation["oci"].repository_id == "var-gcp-variables-test-oci" && google_artifact_registry_repository.automation["oci"].format == "DOCKER" && google_artifact_registry_repository.automation["oci"].location == "us"
     error_message = "Expected OCI AR repo properties to match expectations."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_nginx), 0) == 0
+    error_message = "Expected no upstream repo for NGINX private repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_f5_ai), 0) == 0
+    error_message = "Expected no upstream repo for F5 AI private repo"
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.virtual), 0) == 1
+    error_message = "Expected a single virtual Docker repository."
+  }
 
   # Repo IAM bindings
   assert {
@@ -401,8 +413,8 @@ run "gcp_options_null" {
     error_message = "Expected state_bucket output to be not null or empty."
   }
   assert {
-    condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    condition     = length(output.registries) == 2
+    error_message = "Expected registries output to have two entries."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -417,12 +429,28 @@ run "gcp_options_null" {
     error_message = "Expected registries output for key 'oci' to be not null or empty."
   }
   assert {
-    condition     = length(output.repo_identifiers) == 1
+    condition     = output.registries["oci-virt"] != null
+    error_message = "Expected registries output for key 'oci-virt' to be not null."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].project), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].location), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = length(output.repo_identifiers) == 2
     error_message = "Expected repo_identifiers output to have a single entry."
   }
   assert {
     condition     = try(length(output.repo_identifiers["oci"]), 0) > 0
     error_message = "Expected repo_identifiers output for key 'oci' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.repo_identifiers["oci-virt"]), 0) > 0
+    error_message = "Expected repo_identifiers output for key 'oci-virt' to be not null or empty."
   }
   assert {
     condition     = output.sops_kms_id == null
@@ -818,8 +846,8 @@ run "gcp_options_empty" {
     error_message = "Expected state_bucket output to be not null or empty."
   }
   assert {
-    condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    condition     = length(output.registries) == 2
+    error_message = "Expected registries output to have two entries."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -834,12 +862,28 @@ run "gcp_options_empty" {
     error_message = "Expected registries output for key 'oci' to be not null or empty."
   }
   assert {
-    condition     = length(output.repo_identifiers) == 1
+    condition     = output.registries["oci-virt"] != null
+    error_message = "Expected registries output for key 'oci-virt' to be not null."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].project), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].location), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = length(output.repo_identifiers) == 2
     error_message = "Expected repo_identifiers output to have a single entry."
   }
   assert {
     condition     = try(length(output.repo_identifiers["oci"]), 0) > 0
     error_message = "Expected repo_identifiers output for key 'oci' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.repo_identifiers["oci-virt"]), 0) > 0
+    error_message = "Expected repo_identifiers output for key 'oci-virt' to be not null or empty."
   }
   assert {
     condition     = output.sops_kms_id == null
@@ -1234,8 +1278,8 @@ run "gcp_options_disable_infra_manager" {
     error_message = "Expected state_bucket output to be not null or empty."
   }
   assert {
-    condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    condition     = length(output.registries) == 2
+    error_message = "Expected registries output to have two entries."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -1250,12 +1294,28 @@ run "gcp_options_disable_infra_manager" {
     error_message = "Expected registries output for key 'oci' to be not null or empty."
   }
   assert {
-    condition     = length(output.repo_identifiers) == 1
+    condition     = output.registries["oci-virt"] != null
+    error_message = "Expected registries output for key 'oci-virt' to be not null."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].project), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].location), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = length(output.repo_identifiers) == 2
     error_message = "Expected repo_identifiers output to have a single entry."
   }
   assert {
     condition     = try(length(output.repo_identifiers["oci"]), 0) > 0
     error_message = "Expected repo_identifiers output for key 'oci' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.repo_identifiers["oci-virt"]), 0) > 0
+    error_message = "Expected repo_identifiers output for key 'oci-virt' to be not null or empty."
   }
   assert {
     condition     = output.sops_kms_id == null
@@ -1641,8 +1701,8 @@ run "gcp_options_disable_cloud_deploy" {
     error_message = "Expected state_bucket output to be not null or empty."
   }
   assert {
-    condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    condition     = length(output.registries) == 2
+    error_message = "Expected registries output to have two entries."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -1657,12 +1717,28 @@ run "gcp_options_disable_cloud_deploy" {
     error_message = "Expected registries output for key 'oci' to be not null or empty."
   }
   assert {
-    condition     = length(output.repo_identifiers) == 1
+    condition     = output.registries["oci-virt"] != null
+    error_message = "Expected registries output for key 'oci-virt' to be not null."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].project), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].location), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = length(output.repo_identifiers) == 2
     error_message = "Expected repo_identifiers output to have a single entry."
   }
   assert {
     condition     = try(length(output.repo_identifiers["oci"]), 0) > 0
     error_message = "Expected repo_identifiers output for key 'oci' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.repo_identifiers["oci-virt"]), 0) > 0
+    error_message = "Expected repo_identifiers output for key 'oci-virt' to be not null or empty."
   }
   assert {
     condition     = output.sops_kms_id == null
@@ -2059,8 +2135,8 @@ run "gcp_options_services_disable_on_destroy" {
     error_message = "Expected state_bucket output to be not null or empty."
   }
   assert {
-    condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    condition     = length(output.registries) == 2
+    error_message = "Expected registries output to have two entries."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -2075,12 +2151,28 @@ run "gcp_options_services_disable_on_destroy" {
     error_message = "Expected registries output for key 'oci' to be not null or empty."
   }
   assert {
-    condition     = length(output.repo_identifiers) == 1
+    condition     = output.registries["oci-virt"] != null
+    error_message = "Expected registries output for key 'oci-virt' to be not null."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].project), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].location), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = length(output.repo_identifiers) == 2
     error_message = "Expected repo_identifiers output to have a single entry."
   }
   assert {
     condition     = try(length(output.repo_identifiers["oci"]), 0) > 0
     error_message = "Expected repo_identifiers output for key 'oci' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.repo_identifiers["oci-virt"]), 0) > 0
+    error_message = "Expected repo_identifiers output for key 'oci-virt' to be not null or empty."
   }
   assert {
     condition     = output.sops_kms_id == null
@@ -2477,8 +2569,8 @@ run "gcp_options_disable_dependent_services" {
     error_message = "Expected state_bucket output to be not null or empty."
   }
   assert {
-    condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    condition     = length(output.registries) == 2
+    error_message = "Expected registries output to have two entries."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -2493,12 +2585,28 @@ run "gcp_options_disable_dependent_services" {
     error_message = "Expected registries output for key 'oci' to be not null or empty."
   }
   assert {
-    condition     = length(output.repo_identifiers) == 1
+    condition     = output.registries["oci-virt"] != null
+    error_message = "Expected registries output for key 'oci-virt' to be not null."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].project), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].location), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = length(output.repo_identifiers) == 2
     error_message = "Expected repo_identifiers output to have a single entry."
   }
   assert {
     condition     = try(length(output.repo_identifiers["oci"]), 0) > 0
     error_message = "Expected repo_identifiers output for key 'oci' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.repo_identifiers["oci-virt"]), 0) > 0
+    error_message = "Expected repo_identifiers output for key 'oci-virt' to be not null or empty."
   }
   assert {
     condition     = output.sops_kms_id == null
@@ -2893,8 +3001,8 @@ run "gcp_options_create_state_bucket" {
     error_message = "Expected state_bucket output to be null or empty."
   }
   assert {
-    condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    condition     = length(output.registries) == 2
+    error_message = "Expected registries output to have two entries."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -2909,12 +3017,28 @@ run "gcp_options_create_state_bucket" {
     error_message = "Expected registries output for key 'oci' to be not null or empty."
   }
   assert {
-    condition     = length(output.repo_identifiers) == 1
+    condition     = output.registries["oci-virt"] != null
+    error_message = "Expected registries output for key 'oci-virt' to be not null."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].project), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].location), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = length(output.repo_identifiers) == 2
     error_message = "Expected repo_identifiers output to have a single entry."
   }
   assert {
     condition     = try(length(output.repo_identifiers["oci"]), 0) > 0
     error_message = "Expected repo_identifiers output for key 'oci' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.repo_identifiers["oci-virt"]), 0) > 0
+    error_message = "Expected repo_identifiers output for key 'oci-virt' to be not null or empty."
   }
   assert {
     condition     = output.sops_kms_id == null
@@ -3311,8 +3435,8 @@ run "gcp_options_ar_null" {
     error_message = "Expected state_bucket output to be not null or empty."
   }
   assert {
-    condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    condition     = length(output.registries) == 2
+    error_message = "Expected registries output to have two entries."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -3327,12 +3451,28 @@ run "gcp_options_ar_null" {
     error_message = "Expected registries output for key 'oci' to be not null or empty."
   }
   assert {
-    condition     = length(output.repo_identifiers) == 1
+    condition     = output.registries["oci-virt"] != null
+    error_message = "Expected registries output for key 'oci-virt' to be not null."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].project), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].location), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = length(output.repo_identifiers) == 2
     error_message = "Expected repo_identifiers output to have a single entry."
   }
   assert {
     condition     = try(length(output.repo_identifiers["oci"]), 0) > 0
     error_message = "Expected repo_identifiers output for key 'oci' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.repo_identifiers["oci-virt"]), 0) > 0
+    error_message = "Expected repo_identifiers output for key 'oci-virt' to be not null or empty."
   }
   assert {
     condition     = output.sops_kms_id == null
@@ -3757,8 +3897,8 @@ run "gcp_options_ar_full" {
     error_message = "Expected state_bucket output to be not null or empty."
   }
   assert {
-    condition     = length(output.registries) == 3
-    error_message = "Expected registries output to have three entries."
+    condition     = length(output.registries) == 4
+    error_message = "Expected registries output to have four entries."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -3797,8 +3937,20 @@ run "gcp_options_ar_full" {
     error_message = "Expected registries output for key 'rpm' to be not null or empty."
   }
   assert {
-    condition     = length(output.repo_identifiers) == 3
-    error_message = "Expected repo_identifiers output to have a single entry."
+    condition     = output.registries["oci-virt"] != null
+    error_message = "Expected registries output for key 'oci-virt' to be not null."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].project), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].location), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = length(output.repo_identifiers) == 4
+    error_message = "Expected repo_identifiers output to have four entries."
   }
   assert {
     condition     = try(length(output.repo_identifiers["oci"]), 0) > 0
@@ -3811,6 +3963,10 @@ run "gcp_options_ar_full" {
   assert {
     condition     = try(length(output.repo_identifiers["rpm"]), 0) > 0
     error_message = "Expected repo_identifiers output for key 'rpm' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.repo_identifiers["oci-virt"]), 0) > 0
+    error_message = "Expected repo_identifiers output for key 'oci-virt' to be not null or empty."
   }
   assert {
     condition     = output.sops_kms_id == null
@@ -4206,8 +4362,8 @@ run "state_bucket_options_null" {
     error_message = "Expected state_bucket output to be not null or empty."
   }
   assert {
-    condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    condition     = length(output.registries) == 2
+    error_message = "Expected registries output to have two entries."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -4222,12 +4378,28 @@ run "state_bucket_options_null" {
     error_message = "Expected registries output for key 'oci' to be not null or empty."
   }
   assert {
-    condition     = length(output.repo_identifiers) == 1
+    condition     = output.registries["oci-virt"] != null
+    error_message = "Expected registries output for key 'oci-virt' to be not null."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].project), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].location), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = length(output.repo_identifiers) == 2
     error_message = "Expected repo_identifiers output to have a single entry."
   }
   assert {
     condition     = try(length(output.repo_identifiers["oci"]), 0) > 0
     error_message = "Expected repo_identifiers output for key 'oci' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.repo_identifiers["oci-virt"]), 0) > 0
+    error_message = "Expected repo_identifiers output for key 'oci-virt' to be not null or empty."
   }
   assert {
     condition     = output.sops_kms_id == null
@@ -4622,8 +4794,8 @@ run "state_bucket_options_empty" {
     error_message = "Expected state_bucket output to be not null or empty."
   }
   assert {
-    condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    condition     = length(output.registries) == 2
+    error_message = "Expected registries output to have two entries."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -4638,12 +4810,28 @@ run "state_bucket_options_empty" {
     error_message = "Expected registries output for key 'oci' to be not null or empty."
   }
   assert {
-    condition     = length(output.repo_identifiers) == 1
+    condition     = output.registries["oci-virt"] != null
+    error_message = "Expected registries output for key 'oci-virt' to be not null."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].project), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].location), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = length(output.repo_identifiers) == 2
     error_message = "Expected repo_identifiers output to have a single entry."
   }
   assert {
     condition     = try(length(output.repo_identifiers["oci"]), 0) > 0
     error_message = "Expected repo_identifiers output for key 'oci' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.repo_identifiers["oci-virt"]), 0) > 0
+    error_message = "Expected repo_identifiers output for key 'oci-virt' to be not null or empty."
   }
   assert {
     condition     = output.sops_kms_id == null

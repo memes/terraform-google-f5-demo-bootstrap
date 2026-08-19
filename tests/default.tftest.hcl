@@ -398,6 +398,24 @@ run "ar" {
     ])
     error_message = "Expected AR SA act as role bindings to workload identities matching pattern."
   }
+
+  # Assert upstream and virtual repos
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_nginx), 0) == 0
+    error_message = "Expected no upstream repository for private NGINX."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_f5_ai), 0) == 0
+    error_message = "Expected no upstream repository for private F5 AI."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.virtual), 0) == 1
+    error_message = "Expected a single virtual repository for Docker."
+  }
+  assert {
+    condition     = google_artifact_registry_repository.virtual["oci-virt"].repository_id == "default-test-oci-virt" && google_artifact_registry_repository.virtual["oci-virt"].format == "DOCKER" && google_artifact_registry_repository.virtual["oci-virt"].location == "us" && google_artifact_registry_repository.virtual["oci-virt"].mode == "VIRTUAL_REPOSITORY"
+    error_message = "Expected OCI AR repo properties to match expectations."
+  }
 }
 
 # Assert resources in github.tf
@@ -501,6 +519,14 @@ run "github" {
     condition     = alltrue([for k, v in github_actions_variable.nginx_jwt : v.variable_name == "NGINX_JWT_SECRET"])
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
   }
+  assert {
+    condition     = try(length(github_actions_variable.f5_ai_license), 0) == 0
+    error_message = "Expected no GitHub variables for F% AI license secret."
+  }
+  assert {
+    condition     = alltrue([for k, v in github_actions_variable.f5_ai_license : v.variable_name == "F5_AI_LICENSE_SECRET"])
+    error_message = "Expected GitHub variable for F5 AI license to be named 'F5_AI_LICENSE_SECRET'."
+  }
 
   # Actions permissions
   assert {
@@ -555,8 +581,8 @@ run "outputs" {
     error_message = "Expected state_bucket output to be not null or empty."
   }
   assert {
-    condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    condition     = length(output.registries) == 2
+    error_message = "Expected registries output to have two entries."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -571,12 +597,28 @@ run "outputs" {
     error_message = "Expected registries output for key 'oci' to be not null or empty."
   }
   assert {
-    condition     = length(output.repo_identifiers) == 1
+    condition     = output.registries["oci-virt"] != null
+    error_message = "Expected registries output for key 'virt' to be not null."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].project), 0) > 0
+    error_message = "Expected registries output for key 'virt' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].location), 0) > 0
+    error_message = "Expected registries output for key 'virt' to be not null or empty."
+  }
+  assert {
+    condition     = length(output.repo_identifiers) == 2
     error_message = "Expected repo_identifiers output to have a single entry."
   }
   assert {
     condition     = try(length(output.repo_identifiers["oci"]), 0) > 0
     error_message = "Expected repo_identifiers output for key 'oci' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.repo_identifiers["oci-virt"]), 0) > 0
+    error_message = "Expected repo_identifiers output for key 'virt' to be not null or empty."
   }
   assert {
     condition     = output.sops_kms_id == null
@@ -639,6 +681,22 @@ run "outputs" {
     condition     = output.nginx_jwt.expiration_timestamp == null
     error_message = "Expected nginx_jwt output field expiration_timestamp to be null."
   }
+  assert {
+    condition     = output.f5_ai_license != null
+    error_message = "Expected f5_ai_license output to be not null."
+  }
+  assert {
+    condition     = output.f5_ai_license.secret_id == null
+    error_message = "Expected f5_ai_license output field secret_id to be null."
+  }
+  assert {
+    condition     = output.f5_ai_license.id == null
+    error_message = "Expected f5_ai_license output field id to be null."
+  }
+  assert {
+    condition     = output.f5_ai_license.expiration_timestamp == null
+    error_message = "Expected f5_ai_license output field expiration_timestamp to be null."
+  }
 }
 
 # Assert resources in secrets.tf
@@ -650,5 +708,13 @@ run "secrets" {
   assert {
     condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "default-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'default-test-nginx-jwt'."
+  }
+  assert {
+    condition     = try(length(module.f5_ai_license), 0) == 0
+    error_message = "Expected no F5 AI license secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "default-test-f5-ai-license"])
+    error_message = "Expected F5 AI license secret name to be 'default-test-f5-ai-license'."
   }
 }

@@ -19,7 +19,7 @@ module "f5_ai_harbor_password" {
   project_id = var.project_id
   id         = format("%s-f5-ai-harbor-password", var.name)
   secret     = each.value
-  accessors  = [for k, v in google_project_service_identity.ar : v.member]
+  accessors  = []
 }
 
 # F5 AI Guardrails and Red Team deployments need the license token; if provided, create a secret containing the token

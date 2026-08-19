@@ -37,7 +37,7 @@ locals {
 
 resource "google_project_service_identity" "ar" {
   provider = google-beta
-  for_each = length(local.ar_repos) > 0 || local.has_nginx_jwt_secret || local.has_f5_ai_harbor_credentials_secret ? { ar = true } : {}
+  for_each = try(var.gcp_options.ar.oci, true) || try(var.gcp_options.ar.deb, false) || try(var.gcp_options.rpm, false) || local.has_nginx_jwt_secret || local.has_f5_ai_harbor_credentials_secret ? { ar = true } : {}
   project  = var.project_id
   service  = "artifactregistry.googleapis.com"
 }
@@ -190,6 +190,20 @@ resource "google_artifact_registry_repository" "upstream_nginx" {
 
   depends_on = [
     google_project_service.apis,
+  ]
+}
+
+# Allow the Artifact Registry identity to read the password for remote F5 AI repository.
+resource "google_secret_manager_secret_iam_member" "ar_f5_ai" {
+  for_each  = module.f5_ai_harbor_password
+  project   = var.project_id
+  secret_id = each.value.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = one([for k, v in google_project_service_identity.ar : v.member])
+  depends_on = [
+    google_project_service.apis,
+    google_project_service_identity.ar,
+    module.f5_ai_harbor_password,
   ]
 }
 

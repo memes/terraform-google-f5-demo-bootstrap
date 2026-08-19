@@ -184,3 +184,11 @@ resource "github_workflow_repository_permissions" "automation" {
   default_workflow_permissions     = "read"
   can_approve_pull_request_reviews = true
 }
+
+
+resource "github_actions_variable" "f5_ai_license" {
+  for_each      = { for secret in module.f5_ai_license : "F5_AI_LICENSE_SECRET" => secret.id }
+  repository    = github_repository.automation.name
+  variable_name = each.key
+  value         = each.value
+}

@@ -150,11 +150,18 @@ variable "iac_impersonators" {
 }
 
 variable "nginx_jwt" {
-  type        = string
-  nullable    = true
+  type     = string
+  nullable = true
+  validation {
+    condition     = try(length(var.nginx_jwt), 0) == 0 ? true : can(regex("^(?:\\.?(?:[A-Za-z0-9_-]+)){3}$", var.nginx_jwt))
+    error_message = "The nginx_jwt value must be null/empty or a valid JWT token."
+  }
   default     = null
   description = <<-EOD
-  An optional NGINX+ JWT to store in Google Secret Manager, with read-only access granted to AR service account.
+  An optional NGINX+ JWT to store in Google Secret Manager. If provided, a remote Artifact Registry will be created to
+  reference the upstream NGINX private Docker repository for transparent access to the private images.
+  NOTE: Principal access to the secret will not be established by this module; module consumers will be required to
+  assign the appropriate IAM roles to read or modify the secret as needed.
   EOD
 }
 
@@ -202,5 +209,34 @@ variable "state_bucket_options" {
   }
   description = <<-EOD
   Defines the parameters for the IaC GCS state bucket, if enabled in gcp_options.
+  EOD
+}
+
+variable "f5_ai_license" {
+  type        = string
+  nullable    = true
+  default     = null
+  description = <<-EOD
+  An optional F5 AI license to store in Google Secret Manager.
+  NOTE: Principal access to the secret will not be established by this module; module consumers will be required to
+  assign the appropriate IAM roles to read or modify the secret as needed.
+  EOD
+}
+
+variable "f5_ai_harbor_credentials" {
+  type = object({
+    username = string
+    password = string
+  })
+  nullable = true
+  validation {
+    condition     = var.f5_ai_harbor_credentials == null ? true : try(length(compact([var.f5_ai_harbor_credentials.username, var.f5_ai_harbor_credentials.password])), 0) == 2
+    error_message = "If not null, f5_ai_harbor_credentials must have non-empty username and password fields."
+  }
+  default     = null
+  description = <<-EOD
+  An optional username and password pair that will be stored in Google Secret Manager. If provided, a remote Artifact
+  Registry will be created to reference the upstream F5 AI private Harbor repository for transparent access to the
+  private images, along with a Secret Manager secret to contain the Harbor password.
   EOD
 }

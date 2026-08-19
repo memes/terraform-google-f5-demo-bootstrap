@@ -6,18 +6,45 @@ output "state_bucket" {
 }
 
 output "registries" {
-  value = { for k, v in google_artifact_registry_repository.automation : k => {
-    project  = v.project
-    location = v.location
-    name     = v.name
-  } }
+  value = merge(
+    { for k, v in google_artifact_registry_repository.automation : k => {
+      project  = v.project
+      location = v.location
+      name     = v.name
+      }
+    },
+    { for k, v in google_artifact_registry_repository.upstream_nginx : k => {
+      project  = v.project
+      location = v.location
+      name     = v.name
+      }
+    },
+    { for k, v in google_artifact_registry_repository.upstream_f5_ai : k => {
+      project  = v.project
+      location = v.location
+      name     = v.name
+      }
+    },
+    {
+      for k, v in google_artifact_registry_repository.virtual : k => {
+        project  = v.project
+        location = v.location
+        name     = v.name
+      }
+    },
+  )
   description = <<-EOD
   A map of Artifact Registry resources created by the module.
   EOD
 }
 
 output "repo_identifiers" {
-  value       = { for k, v in google_artifact_registry_repository.automation : k => local.ar_repos[k].identifier }
+  value = merge(
+    { for k, v in google_artifact_registry_repository.automation : k => local.ar_repos[k].identifier },
+    { for k, v in google_artifact_registry_repository.upstream_nginx : k => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
+    { for k, v in google_artifact_registry_repository.upstream_f5_ai : k => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
+    { for k, v in google_artifact_registry_repository.virtual : k => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
+  )
   description = <<-EOD
   A map of Artifact Registry resource types to canonical access identifiers.
   EOD
@@ -111,5 +138,17 @@ output "nginx_jwt" {
   description = <<-EOD
   If an NGINX JWT secret was created during bootstrap, return the fully-qualified and local identifiers, and expiration
   timestamp, if appropriate.
+  EOD
+}
+
+output "f5_ai_license" {
+  value = {
+    secret_id            = one([for k, v in module.f5_ai_license : v.secret_id])
+    id                   = one([for k, v in module.f5_ai_license : v.id])
+    expiration_timestamp = one([for k, v in module.f5_ai_license : v.expiration_timestamp])
+  }
+  description = <<-EOD
+  If an F5 AI license secret was created during bootstrap, return the fully-qualified and local identifiers, and
+  expiration timestamp, if appropriate.
   EOD
 }

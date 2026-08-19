@@ -58,6 +58,10 @@ locals {
   secret_manager_apis = [
     "secretmanager.googleapis.com",
   ]
+  # Determine which secrets should be created with corresponding GitHub action values
+  has_nginx_jwt_secret                = try(length(trimspace(var.nginx_jwt)), 0) > 0
+  has_f5_ai_license_secret            = try(length(trimspace(var.f5_ai_license)), 0) > 0
+  has_f5_ai_harbor_credentials_secret = try(length(trimspace(var.f5_ai_harbor_credentials.username)), 0) > 0 && try(length(trimspace(var.f5_ai_harbor_credentials.password)), 0) > 0
 }
 
 # Bootstrapping should enable the minimal set of services required to complete bootstrap and permit additional actions to be executed.
@@ -69,7 +73,7 @@ resource "google_project_service" "apis" {
     try(var.gcp_options.enable_infra_manager, true) ? local.infra_manager_apis : [],
     try(var.gcp_options.enable_cloud_deploy, true) ? local.cloud_deploy_apis : [],
     try(var.gcp_options.kms, false) ? local.kms_apis : [],
-    coalesce(var.nginx_jwt, "unspecified") != "unspecified" ? local.secret_manager_apis : [],
+    local.has_nginx_jwt_secret || local.has_f5_ai_license_secret || local.has_f5_ai_harbor_credentials_secret ? local.secret_manager_apis : [],
     var.bootstrap_apis == null ? [] : var.bootstrap_apis,
   ) : api => true }
   project                    = var.project_id

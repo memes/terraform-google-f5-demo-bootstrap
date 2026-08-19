@@ -9,6 +9,9 @@ locals {
         description = format("OCI registry for %s", var.name)
         location    = try(var.gcp_options.ar.location, "us")
         identifier  = format("%s-docker.pkg.dev/%s/%s-oci", try(var.gcp_options.ar.location, "us"), var.project_id, var.name)
+        docker_config = {
+          immutable_tags = true
+        }
       }
     } : {},
     try(var.gcp_options.ar.deb, false) ? {
@@ -42,6 +45,13 @@ resource "google_artifact_registry_repository" "automation" {
   description   = each.value.description
   labels        = var.labels
 
+  dynamic "docker_config" {
+    for_each = try(each.value.docker_config, {})
+    content {
+      immutable_tags = try(docker_config.value.immutable_tags, true)
+    }
+  }
+
   depends_on = [
     google_project_service.apis,
   ]
@@ -62,7 +72,7 @@ resource "google_artifact_registry_repository_iam_member" "iac" {
   ]
 }
 
-# Allow OIDC principals with attribute 'artifact_registry="writer"' read-only access to Artifact Registry
+# Allow OIDC principals with attribute 'artifact_registry="reader"' read-only access to Artifact Registry
 resource "google_artifact_registry_repository_iam_member" "reader" {
   for_each   = google_artifact_registry_repository.automation
   project    = each.value.project
@@ -145,4 +155,101 @@ resource "google_service_account_iam_member" "ar" {
     google_service_account.ar,
     google_iam_workload_identity_pool.bots,
   ]
+}
+
+resource "google_artifact_registry_repository" "upstream_nginx" {
+  for_each      = local.has_nginx_jwt_secret ? { nginx = true } : {}
+  project       = var.project_id
+  repository_id = format("%s-%s", var.name, each.key)
+  format        = "DOCKER"
+  location      = try(var.gcp_options.ar.location, "us")
+  description   = format("Upstream NGINX private Docker repository for %s", var.name)
+  labels        = var.labels
+  mode          = "REMOTE_REPOSITORY"
+  remote_repository_config {
+    description                 = "F5 NGINX+ private Docker repository"
+    disable_upstream_validation = true
+    docker_repository {
+      custom_repository {
+        uri = "https://private-registry.nginx.com"
+      }
+    }
+    upstream_credentials {
+      username_password_credentials {
+        username = format("%s:none", var.nginx_jwt)
+      }
+    }
+  }
+
+  depends_on = [
+    google_project_service.apis,
+  ]
+}
+
+resource "google_artifact_registry_repository" "upstream_f5_ai" {
+  for_each      = local.has_f5_ai_harbor_credentials_secret ? { "f5-ai" = true } : {}
+  project       = var.project_id
+  repository_id = format("%s-%s", var.name, each.key)
+  format        = "DOCKER"
+  location      = try(var.gcp_options.ar.location, "us")
+  description   = format("Upstream F5 AI private Docker repository for %s", var.name)
+  labels        = var.labels
+  mode          = "REMOTE_REPOSITORY"
+  remote_repository_config {
+    description                 = "F5 AI private Harbor repository"
+    disable_upstream_validation = true
+    docker_repository {
+      custom_repository {
+        uri = "https://harbor.calypsoai.app"
+      }
+    }
+    upstream_credentials {
+      username_password_credentials {
+        username                = var.f5_ai_harbor_credentials.username
+        password_secret_version = format("%s/versions/latest", module.f5_ai_harbor_password.id)
+      }
+    }
+  }
+
+  depends_on = [
+    google_project_service.apis,
+    module.f5_ai_harbor_password,
+  ]
+}
+
+resource "google_artifact_registry_repository" "virtual" {
+  for_each      = try(var.gcp_options.ar.oci, true) || local.has_nginx_jwt_secret || local.has_f5_ai_harbor_credentials_secret ? { oci-virt = true } : {}
+  project       = var.project_id
+  repository_id = format("%s-%s", var.name, each.key)
+  format        = "DOCKER"
+  location      = try(var.gcp_options.ar.location, "us")
+  description   = format("Virtual Docker repository for %s", var.name)
+  labels        = var.labels
+  mode          = "VIRTUAL_REPOSITORY"
+  virtual_repository_config {
+    dynamic "upstream_policies" {
+      for_each = { for k, v in google_artifact_registry_repository.automation : k => v if k == "oci" }
+      content {
+        id         = upstream_policies.value.repository_id
+        repository = upstream_policies.value.id
+        priority   = 100
+      }
+    }
+    dynamic "upstream_policies" {
+      for_each = google_artifact_registry_repository.upstream_nginx
+      content {
+        id         = upstream_policies.value.repository_id
+        repository = upstream_policies.value.id
+        priority   = 500
+      }
+    }
+    dynamic "upstream_policies" {
+      for_each = google_artifact_registry_repository.upstream_f5_ai
+      content {
+        id         = upstream_policies.value.repository_id
+        repository = upstream_policies.value.id
+        priority   = 500
+      }
+    }
+  }
 }

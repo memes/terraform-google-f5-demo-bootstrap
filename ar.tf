@@ -206,7 +206,7 @@ resource "google_artifact_registry_repository" "upstream_f5_ai" {
     upstream_credentials {
       username_password_credentials {
         username                = var.f5_ai_harbor_credentials.username
-        password_secret_version = format("%s/versions/latest", module.f5_ai_harbor_password.id)
+        password_secret_version = format("%s/versions/latest", one([for k, v in module.f5_ai_harbor_password : v.id]))
       }
     }
   }

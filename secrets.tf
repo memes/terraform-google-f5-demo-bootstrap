@@ -1,6 +1,5 @@
 # Working with NGINX+ images usually requires a JWT from F5 for retrieval and for activation. If provided, create a
-# a secret with the JWT value that will automatically be used for a remote Artifact Registry, and that can be accessed
-# by others with the correct IAM role outside the scope of this module.
+# a secret with the JWT value that can be accessed by others with the correct IAM role outside the scope of this module.
 module "nginx_jwt" {
   for_each   = local.has_nginx_jwt_secret ? { nginx = var.nginx_jwt } : {}
   source     = "memes/secret-manager/google"
@@ -20,7 +19,7 @@ module "f5_ai_harbor_password" {
   project_id = var.project_id
   id         = format("%s-f5-ai-harbor-password", var.name)
   secret     = each.value
-  accessors  = []
+  accessors  = [for k, v in google_project_service_identity.ar : v.member]
 }
 
 # F5 AI Guardrails and Red Team deployments need the license token; if provided, create a secret containing the token

@@ -35,6 +35,13 @@ locals {
   )
 }
 
+resource "google_project_service_identity" "ar" {
+  provider = google-beta
+  for_each = length(local.ar_repos) > 0 || local.has_nginx_jwt_secret || local.has_f5_ai_harbor_credentials_secret ? { ar = true } : {}
+  project  = var.project_id
+  service  = "artifactregistry.googleapis.com"
+}
+
 # Create any needed artifact registry for the project
 resource "google_artifact_registry_repository" "automation" {
   for_each      = local.ar_repos

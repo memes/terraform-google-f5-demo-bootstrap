@@ -45,6 +45,7 @@ resource "google_secret_manager_secret_iam_member" "upstream_oci_password_nginx"
 
   depends_on = [
     google_project_service_identity.ids,
+    google_secret_manager_secret.upstream_oci_password_nginx,
   ]
 }
 
@@ -76,6 +77,7 @@ resource "google_secret_manager_secret_iam_member" "upstream_oci_password_f5_ai"
 
   depends_on = [
     google_project_service_identity.ids,
+    google_secret_manager_secret.upstream_oci_password_f5_ai,
   ]
 }
 

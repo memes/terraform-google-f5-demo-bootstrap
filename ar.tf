@@ -186,7 +186,7 @@ resource "google_artifact_registry_repository" "upstream_oci_nginx" {
 
   depends_on = [
     google_project_service.apis,
-    google_secret_manager_secret.upstream_oci_password_nginx,
+    google_secret_manager_secret_iam_member.upstream_oci_password_nginx,
   ]
 }
 
@@ -218,7 +218,7 @@ resource "google_artifact_registry_repository" "upstream_oci_f5_ai" {
 
   depends_on = [
     google_project_service.apis,
-    google_secret_manager_secret.upstream_oci_password_f5_ai,
+    google_secret_manager_secret_iam_member.upstream_oci_password_f5_ai,
   ]
 }
 

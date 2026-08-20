@@ -24,6 +24,8 @@
         "hashicorp",
         "iamcredentials",
         "incpatch",
+        "jaxxstorm",
+        "jsonencode",
         "ldflags",
         "markdownlint",
         "opencontainers",
@@ -36,6 +38,7 @@
         "thumbsup",
         "trimpath",
         "venv",
+        "virt",
         "wontfix",
         "workdir",
         "yamllint"

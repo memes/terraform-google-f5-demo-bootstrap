@@ -301,11 +301,11 @@ run "gcp_options_null" {
     error_message = "Expected OCI AR repo properties to match expectations."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository.upstream_nginx), 0) == 0
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
     error_message = "Expected no upstream repo for NGINX private repo."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository.upstream_f5_ai), 0) == 0
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
     error_message = "Expected no upstream repo for F5 AI private repo"
   }
   assert {
@@ -495,35 +495,35 @@ run "gcp_options_null" {
 
   # Secret Manager secrets
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
     error_message = "Expected no upstream NGINX Docker secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "var-gcp-variables-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
     error_message = "Expected no upstream F5 AI harbor secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "var-gcp-variables-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 0
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
     error_message = "Expected no F5 AI license secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'var-gcp-variables-test-f5-ai-license'."
   }
 }
@@ -961,35 +961,35 @@ run "gcp_options_empty" {
 
   # Secret Manager secrets
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
     error_message = "Expected no upstream NGINX Docker secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "var-gcp-variables-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
     error_message = "Expected no upstream F5 AI harbor secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "var-gcp-variables-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 0
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
     error_message = "Expected no F5 AI license secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'var-gcp-variables-test-f5-ai-license'."
   }
 }
@@ -1426,35 +1426,35 @@ run "gcp_options_disable_infra_manager" {
 
   # Secret Manager secrets
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
     error_message = "Expected no upstream NGINX Docker secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "var-gcp-variables-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
     error_message = "Expected no upstream F5 AI harbor secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "var-gcp-variables-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 0
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
     error_message = "Expected no F5 AI license secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'var-gcp-variables-test-f5-ai-license'."
   }
 }
@@ -1883,35 +1883,35 @@ run "gcp_options_disable_cloud_deploy" {
 
   # Secret Manager secrets
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
     error_message = "Expected no upstream NGINX Docker secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "var-gcp-variables-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
     error_message = "Expected no upstream F5 AI harbor secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "var-gcp-variables-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 0
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
     error_message = "Expected no F5 AI license secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'var-gcp-variables-test-f5-ai-license'."
   }
 }
@@ -2350,35 +2350,35 @@ run "gcp_options_services_disable_on_destroy" {
 
   # Secret Manager secrets
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
     error_message = "Expected no upstream NGINX Docker secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "var-gcp-variables-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
     error_message = "Expected no upstream F5 AI harbor secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "var-gcp-variables-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 0
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
     error_message = "Expected no F5 AI license secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'var-gcp-variables-test-f5-ai-license'."
   }
 }
@@ -2817,35 +2817,35 @@ run "gcp_options_disable_dependent_services" {
 
   # Secret Manager secrets
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
     error_message = "Expected no upstream NGINX Docker secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "var-gcp-variables-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
     error_message = "Expected no upstream F5 AI harbor secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "var-gcp-variables-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 0
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
     error_message = "Expected no F5 AI license secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'var-gcp-variables-test-f5-ai-license'."
   }
 }
@@ -3282,35 +3282,35 @@ run "gcp_options_create_state_bucket" {
 
   # Secret Manager secrets
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
     error_message = "Expected no upstream NGINX Docker secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "var-gcp-variables-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
     error_message = "Expected no upstream F5 AI harbor secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "var-gcp-variables-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 0
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
     error_message = "Expected no F5 AI license secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'var-gcp-variables-test-f5-ai-license'."
   }
 }
@@ -3749,35 +3749,35 @@ run "gcp_options_ar_null" {
 
   # Secret Manager secrets
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
     error_message = "Expected no upstream NGINX Docker secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "var-gcp-variables-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
     error_message = "Expected no upstream F5 AI harbor secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "var-gcp-variables-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 0
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
     error_message = "Expected no F5 AI license secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'var-gcp-variables-test-f5-ai-license'."
   }
 }
@@ -3786,10 +3786,11 @@ run "gcp_options_ar_full" {
   variables {
     gcp_options = {
       ar = {
-        location = "mock"
-        oci      = true
-        deb      = true
-        rpm      = true
+        location    = "mock"
+        oci         = true
+        deb         = true
+        rpm         = true
+        virtual_oci = true
       }
     }
   }
@@ -4139,8 +4140,8 @@ run "gcp_options_ar_full" {
     error_message = "Expected AR SA act as role bindings to workload identities matching pattern."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.virtual_reader), 0) == 0
-    error_message = "Expected no IAM bindings for Workload Identity AR readers on virtual repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.virtual_reader), 0) == 1
+    error_message = "Expected one IAM bindings for Workload Identity AR readers on virtual repo."
   }
   assert {
     condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.virtual_reader : can(
@@ -4177,8 +4178,8 @@ run "gcp_options_ar_full" {
     error_message = "Expected a GitHub secret for Cloud Deploy SA."
   }
   assert {
-    condition     = try(length(github_actions_variable.registry), 0) == 3
-    error_message = "Expected three GitHub variables for AR repos."
+    condition     = try(length(github_actions_variable.registry), 0) == 4
+    error_message = "Expected four GitHub variables for AR repos."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -4192,6 +4193,10 @@ run "gcp_options_ar_full" {
     condition     = github_actions_variable.registry["RPM_REGISTRY"].variable_name == "RPM_REGISTRY"
     error_message = "Expected GitHub variable named 'RPM_REGISTRY' for YUM AR repo."
   }
+  assert {
+    condition     = github_actions_variable.registry["OCI_VIRT_REGISTRY"].variable_name == "OCI_VIRT_REGISTRY"
+    error_message = "Expected GitHub variable named 'OCI_VIRT_REGISTRY' for virtual OCI AR repo."
+  }
 
   # Outputs
   assert {
@@ -4199,8 +4204,8 @@ run "gcp_options_ar_full" {
     error_message = "Expected state_bucket output to be not null or empty."
   }
   assert {
-    condition     = length(output.registries) == 3
-    error_message = "Expected registries output to have three entries."
+    condition     = length(output.registries) == 4
+    error_message = "Expected registries output to have four entries."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -4239,7 +4244,19 @@ run "gcp_options_ar_full" {
     error_message = "Expected registries output for key 'rpm' to be not null or empty."
   }
   assert {
-    condition     = length(output.repo_identifiers) == 3
+    condition     = output.registries["oci-virt"] != null
+    error_message = "Expected registries output for key 'oci-virt' to be not null."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].project), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.registries["oci-virt"].location), 0) > 0
+    error_message = "Expected registries output for key 'oci-virt' to be not null or empty."
+  }
+  assert {
+    condition     = length(output.repo_identifiers) == 4
     error_message = "Expected repo_identifiers output to have three entries."
   }
   assert {
@@ -4253,6 +4270,10 @@ run "gcp_options_ar_full" {
   assert {
     condition     = try(length(output.repo_identifiers["rpm"]), 0) > 0
     error_message = "Expected repo_identifiers output for key 'rpm' to be not null or empty."
+  }
+  assert {
+    condition     = try(length(output.repo_identifiers["oci-virt"]), 0) > 0
+    error_message = "Expected repo_identifiers output for key 'oci-virt' to be not null or empty."
   }
   assert {
     condition     = output.sops_kms_id == null
@@ -4277,35 +4298,35 @@ run "gcp_options_ar_full" {
 
   # Secret Manager secrets
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
     error_message = "Expected no upstream NGINX Docker secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "var-gcp-variables-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
     error_message = "Expected no upstream F5 AI harbor secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "var-gcp-variables-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 0
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
     error_message = "Expected no F5 AI license secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'var-gcp-variables-test-f5-ai-license'."
   }
 }
@@ -4742,35 +4763,35 @@ run "state_bucket_options_null" {
 
   # Secret Manager secrets
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
     error_message = "Expected no upstream NGINX Docker secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "var-gcp-variables-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
     error_message = "Expected no upstream F5 AI harbor secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "var-gcp-variables-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 0
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
     error_message = "Expected no F5 AI license secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'var-gcp-variables-test-f5-ai-license'."
   }
 }
@@ -5207,43 +5228,45 @@ run "state_bucket_options_empty" {
 
   # Secret Manager secrets
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
     error_message = "Expected no upstream NGINX Docker secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "var-gcp-variables-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
     error_message = "Expected no upstream F5 AI harbor secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "var-gcp-variables-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 0
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
     error_message = "Expected no F5 AI license secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'var-gcp-variables-test-f5-ai-license'."
   }
 }
 
-run "gcp_options_create_virtual_oci_repository" {
+run "gcp_options_ar_virtual_oci" {
   variables {
     gcp_options = {
-      create_virtual_oci_repository = true
+      ar = {
+        virtual_oci = true
+      }
     }
   }
 
@@ -5506,11 +5529,11 @@ run "gcp_options_create_virtual_oci_repository" {
     error_message = "Expected OCI AR repo properties to match expectations."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository.upstream_nginx), 0) == 0
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
     error_message = "Expected no upstream repo for NGINX private repo."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository.upstream_f5_ai), 0) == 0
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
     error_message = "Expected no upstream repo for F5 AI private repo"
   }
   assert {
@@ -5720,35 +5743,35 @@ run "gcp_options_create_virtual_oci_repository" {
 
   # Secret Manager secrets
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
     error_message = "Expected no upstream NGINX Docker secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "var-gcp-variables-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
     error_message = "Expected no upstream F5 AI harbor secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "var-gcp-variables-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 0
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
     error_message = "Expected no F5 AI license secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'var-gcp-variables-test-f5-ai-license'."
   }
 }
@@ -6018,11 +6041,11 @@ run "nginx_jwt" {
     error_message = "Expected OCI AR repo properties to match expectations."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository.upstream_nginx), 0) == 1
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 1
     error_message = "Expected one upstream repo for NGINX private repo."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository.upstream_f5_ai), 0) == 0
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
     error_message = "Expected no upstream repo for F5 AI private repo"
   }
   assert {
@@ -6160,8 +6183,8 @@ run "nginx_jwt" {
     error_message = "Expected GitHub variable named 'OCI_REGISTRY' for OCI AR repo."
   }
   assert {
-    condition     = github_actions_variable.registry["NGINX_REGISTRY"].variable_name == "NGINX_REGISTRY"
-    error_message = "Expected GitHub variable named 'NGINX_REGISTRY' for OCI AR repo."
+    condition     = github_actions_variable.registry["OCI_NGINX_REGISTRY"].variable_name == "OCI_NGINX_REGISTRY"
+    error_message = "Expected GitHub variable named 'OCI_NGINX_REGISTRY' for OCI AR repo."
   }
 
   # Outputs
@@ -6186,15 +6209,15 @@ run "nginx_jwt" {
     error_message = "Expected registries output for key 'oci' to be not null or empty."
   }
   assert {
-    condition     = output.registries["nginx"] != null
+    condition     = output.registries["oci-nginx"] != null
     error_message = "Expected registries output for key 'nginx' to be not null."
   }
   assert {
-    condition     = try(length(output.registries["nginx"].project), 0) > 0
+    condition     = try(length(output.registries["oci-nginx"].project), 0) > 0
     error_message = "Expected registries output for key 'nginx' to be not null or empty."
   }
   assert {
-    condition     = try(length(output.registries["nginx"].location), 0) > 0
+    condition     = try(length(output.registries["oci-nginx"].location), 0) > 0
     error_message = "Expected registries output for key 'nginx' to be not null or empty."
   }
   assert {
@@ -6206,7 +6229,7 @@ run "nginx_jwt" {
     error_message = "Expected repo_identifiers output for key 'oci' to be not null or empty."
   }
   assert {
-    condition     = try(length(output.repo_identifiers["nginx"]), 0) > 0
+    condition     = try(length(output.repo_identifiers["oci-nginx"]), 0) > 0
     error_message = "Expected repo_identifiers output for key 'nginx' to be not null or empty."
   }
   assert {
@@ -6232,35 +6255,35 @@ run "nginx_jwt" {
 
   # Secret Manager secrets
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 1
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 1
     error_message = "Expected a NGINX JWT secret to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 1
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 1
     error_message = "Expected am upstream NGINX Docker secret to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "var-gcp-variables-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
     error_message = "Expected no upstream F5 AI harbor secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "var-gcp-variables-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 0
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
     error_message = "Expected no F5 AI license secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'var-gcp-variables-test-f5-ai-license'."
   }
 }
@@ -6530,11 +6553,11 @@ run "f5_ai_license" {
     error_message = "Expected OCI AR repo properties to match expectations."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository.upstream_nginx), 0) == 0
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
     error_message = "Expected no upstream repo for NGINX private repo."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository.upstream_f5_ai), 0) == 0
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
     error_message = "Expected no upstream repo for F5 AI private repo"
   }
   assert {
@@ -6724,42 +6747,42 @@ run "f5_ai_license" {
 
   # Secret Manager secrets
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
     error_message = "Expected no upstream NGINX Docker secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "var-gcp-variables-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
     error_message = "Expected no upstream F5 AI harbor secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "var-gcp-variables-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 1
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 1
     error_message = "Expected an F5 AI license secret to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'var-gcp-variables-test-f5-ai-license'."
   }
 }
 
-run "f5_ai_harbor_credentials" {
+run "f5_ai_repo_credentials" {
   variables {
-    f5_ai_harbor_credentials = {
+    f5_ai_repo_credentials = {
       username = "dummy-f5-ai-user"
       password = "dummy-f5-ai-password"
     }
@@ -7025,11 +7048,11 @@ run "f5_ai_harbor_credentials" {
     error_message = "Expected OCI AR repo properties to match expectations."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository.upstream_nginx), 0) == 0
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
     error_message = "Expected no upstream repo for NGINX private repo."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository.upstream_f5_ai), 0) == 1
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 1
     error_message = "Expected an upstream repo for F5 AI private repo"
   }
   assert {
@@ -7167,8 +7190,8 @@ run "f5_ai_harbor_credentials" {
     error_message = "Expected GitHub variable named 'OCI_REGISTRY' for OCI AR repo."
   }
   assert {
-    condition     = github_actions_variable.registry["F5_AI_REGISTRY"].variable_name == "F5_AI_REGISTRY"
-    error_message = "Expected GitHub variable named 'F5_AI_REGISTRY' for OCI AR repo."
+    condition     = github_actions_variable.registry["OCI_F5_AI_REGISTRY"].variable_name == "OCI_F5_AI_REGISTRY"
+    error_message = "Expected GitHub variable named 'OCI_F5_AI_REGISTRY' for OCI AR repo."
   }
 
   # Outputs
@@ -7193,15 +7216,15 @@ run "f5_ai_harbor_credentials" {
     error_message = "Expected registries output for key 'oci' to be not null or empty."
   }
   assert {
-    condition     = output.registries["f5-ai"] != null
+    condition     = output.registries["oci-f5-ai"] != null
     error_message = "Expected registries output for key 'f5-ai' to be not null."
   }
   assert {
-    condition     = try(length(output.registries["f5-ai"].project), 0) > 0
+    condition     = try(length(output.registries["oci-f5-ai"].project), 0) > 0
     error_message = "Expected registries output for key 'f5-ai' to be not null or empty."
   }
   assert {
-    condition     = try(length(output.registries["f5-ai"].location), 0) > 0
+    condition     = try(length(output.registries["oci-f5-ai"].location), 0) > 0
     error_message = "Expected registries output for key 'f5-ai' to be not null or empty."
   }
   assert {
@@ -7213,7 +7236,7 @@ run "f5_ai_harbor_credentials" {
     error_message = "Expected repo_identifiers output for key 'oci' to be not null or empty."
   }
   assert {
-    condition     = try(length(output.repo_identifiers["f5-ai"]), 0) > 0
+    condition     = try(length(output.repo_identifiers["oci-f5-ai"]), 0) > 0
     error_message = "Expected repo_identifiers output for key 'f5-ai' to be not null or empty."
   }
   assert {
@@ -7239,35 +7262,35 @@ run "f5_ai_harbor_credentials" {
 
   # Secret Manager secrets
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
     error_message = "Expected no upstream NGINX Docker secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "var-gcp-variables-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 1
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 1
     error_message = "Expected an upstream F5 AI harbor secret to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "var-gcp-variables-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 0
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
     error_message = "Expected no F5 AI license secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "var-gcp-variables-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'var-gcp-variables-test-f5-ai-license'."
   }
 }

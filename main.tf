@@ -59,13 +59,14 @@ locals {
     "secretmanager.googleapis.com",
   ]
   # Will Artifact Registry be required?
-  enable_artifact_registry    = try(var.gcp_options.ar.oci, true) || try(var.gcp_options.ar.deb, false) || try(var.gcp_options.rpm, false) || local.has_nginx_jwt_secret || local.has_f5_ai_harbor_credentials_secret
-  enable_virtual_oci_registry = (try(var.gcp_options.ar.oci, true) || local.has_nginx_jwt_secret || local.has_f5_ai_harbor_credentials_secret) && try(var.gcp_options.create_virtual_oci_repository, false)
-  # Determine which secrets should be created with corresponding GitHub action values
-  has_nginx_jwt_secret                = try(length(trimspace(var.nginx_jwt)), 0) > 0
-  has_f5_ai_license_secret            = try(length(trimspace(var.f5_ai_license)), 0) > 0
-  has_f5_ai_harbor_credentials_secret = try(length(trimspace(var.f5_ai_harbor_credentials.username)), 0) > 0 && try(length(trimspace(var.f5_ai_harbor_credentials.password)), 0) > 0
-  # List of service identities that are required for the module
+  enable_artifact_registry = try(var.gcp_options.ar.oci, true) || try(var.gcp_options.ar.deb, false) || try(var.gcp_options.rpm, false) || local.has_nginx_jwt_secret || local.has_f5_ai_repo_credentials_secret
+  # Only create a virtual OCI registry if the flag is set and there is at least one OCI repo.
+  enable_virtual_oci_registry = try(var.gcp_options.ar.virtual_oci, false) && (try(var.gcp_options.ar.oci, true) || local.has_nginx_jwt_secret || local.has_f5_ai_repo_credentials_secret)
+  # Determine which secrets should be created with corresponding GitHub action values.
+  has_nginx_jwt_secret              = try(length(trimspace(var.nginx_jwt)), 0) > 0
+  has_f5_ai_license_secret          = try(length(trimspace(var.f5_ai_license)), 0) > 0
+  has_f5_ai_repo_credentials_secret = try(length(trimspace(var.f5_ai_repo_credentials.username)), 0) > 0 && try(length(trimspace(var.f5_ai_repo_credentials.password)), 0) > 0
+  # List of service identities that are required for the module or for typical demos that use the module
   service_identities = concat(
     try(var.gcp_options.enable_cloud_deploy, true) ? local.cloud_deploy_apis : [],
     local.enable_artifact_registry ? ["artifactregistry.googleapis.com"] : [],
@@ -81,7 +82,7 @@ resource "google_project_service" "apis" {
     try(var.gcp_options.enable_infra_manager, true) ? local.infra_manager_apis : [],
     try(var.gcp_options.enable_cloud_deploy, true) ? local.cloud_deploy_apis : [],
     try(var.gcp_options.kms, false) ? local.kms_apis : [],
-    local.has_nginx_jwt_secret || local.has_f5_ai_license_secret || local.has_f5_ai_harbor_credentials_secret ? local.secret_manager_apis : [],
+    local.has_nginx_jwt_secret || local.has_f5_ai_license_secret || local.has_f5_ai_repo_credentials_secret ? local.secret_manager_apis : [],
     var.bootstrap_apis == null ? [] : var.bootstrap_apis,
   ) : api => true }
   project                    = var.project_id

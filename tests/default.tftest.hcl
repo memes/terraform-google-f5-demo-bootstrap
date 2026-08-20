@@ -330,11 +330,11 @@ run "ar" {
     error_message = "Expected OCI AR repo properties to match expectations."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository.upstream_nginx), 0) == 0
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
     error_message = "Expected no upstream repository for private NGINX."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository.upstream_f5_ai), 0) == 0
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
     error_message = "Expected no upstream repository for private F5 AI."
   }
   assert {
@@ -671,10 +671,6 @@ run "outputs" {
     error_message = "Expected nginx_jwt output field id to be null."
   }
   assert {
-    condition     = output.nginx_jwt.expiration_timestamp == null
-    error_message = "Expected nginx_jwt output field expiration_timestamp to be null."
-  }
-  assert {
     condition     = output.f5_ai_license != null
     error_message = "Expected f5_ai_license output to be not null."
   }
@@ -686,44 +682,40 @@ run "outputs" {
     condition     = output.f5_ai_license.id == null
     error_message = "Expected f5_ai_license output field id to be null."
   }
-  assert {
-    condition     = output.f5_ai_license.expiration_timestamp == null
-    error_message = "Expected f5_ai_license output field expiration_timestamp to be null."
-  }
 }
 
 # Assert resources in secrets.tf
 run "secrets" {
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "default-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "default-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'default-test-nginx-jwt'."
   }
   assert {
-    condition     = try(length(module.nginx_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
     error_message = "Expected no upstream NGINX Docker secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_upstream_password : v.secret_id == "default-test-nginx-upstream"])
-    error_message = "Expected upstream NGINX Docker secret name to be 'default-test-nginx-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "default-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'default-test-upstream-oci-nginx'."
   }
   assert {
-    condition     = try(length(module.f5_ai_harbor_upstream_password), 0) == 0
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
     error_message = "Expected no upstream F5 AI harbor secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_harbor_upstream_password : v.secret_id == "default-test-f5-ai-upstream"])
-    error_message = "Expected upstream F5 AI harbor secret name to be 'default-test-f5-ai-upstream'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "default-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'default-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(module.f5_ai_license), 0) == 0
+    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
     error_message = "Expected no F5 AI license secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.f5_ai_license : v.secret_id == "default-test-f5-ai-license"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "default-test-f5-ai-license"])
     error_message = "Expected F5 AI license secret name to be 'default-test-f5-ai-license'."
   }
 }

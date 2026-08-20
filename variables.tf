@@ -77,13 +77,13 @@ variable "gcp_options" {
     disable_dependent_services  = optional(bool, false)
     create_state_bucket         = optional(bool, true)
     ar = optional(object({
-      location = string
-      oci      = bool
-      deb      = bool
-      rpm      = bool
+      location    = optional(string, "us")
+      oci         = optional(bool, true)
+      deb         = optional(bool, false)
+      rpm         = optional(bool, false)
+      virtual_oci = optional(bool, false)
     }))
-    kms                           = optional(bool, false)
-    create_virtual_oci_repository = optional(bool, false)
+    kms = optional(bool, false)
   })
   nullable = true
   default = {
@@ -93,13 +93,13 @@ variable "gcp_options" {
     disable_dependent_services  = false
     create_state_bucket         = true
     ar = {
-      location = "us"
-      oci      = true
-      deb      = false
-      rpm      = false
+      location    = "us"
+      oci         = true
+      deb         = false
+      rpm         = false
+      virtual_oci = false
     }
-    kms                           = false
-    create_virtual_oci_repository = false
+    kms = false
   }
   description = <<-EOD
   Defines the parameters for the supporting Google Cloud resources that may not be essential to the demo. By default
@@ -225,20 +225,20 @@ variable "f5_ai_license" {
   EOD
 }
 
-variable "f5_ai_harbor_credentials" {
+variable "f5_ai_repo_credentials" {
   type = object({
     username = string
     password = string
   })
   nullable = true
   validation {
-    condition     = var.f5_ai_harbor_credentials == null ? true : try(length(compact([var.f5_ai_harbor_credentials.username, var.f5_ai_harbor_credentials.password])), 0) == 2
-    error_message = "If not null, f5_ai_harbor_credentials must have non-empty username and password fields."
+    condition     = var.f5_ai_repo_credentials == null ? true : try(length(compact([var.f5_ai_repo_credentials.username, var.f5_ai_repo_credentials.password])), 0) == 2
+    error_message = "If not null, f5_ai_repo_credentials must have non-empty username and password fields."
   }
   default     = null
   description = <<-EOD
-  An optional username and password pair that will be stored in Google Secret Manager. If provided, a remote Artifact
-  Registry will be created to reference the upstream F5 AI private Harbor repository for transparent access to the
-  private images, along with a Secret Manager secret to contain the Harbor password.
+  An optional username and password pair for the upstream F5 AI container repository. If provided, a remote Artifact
+  Registry will be created to reference the upstream F5 AI private repository for transparent access to the
+  private images, along with a Secret Manager secret to contain the password.
   EOD
 }

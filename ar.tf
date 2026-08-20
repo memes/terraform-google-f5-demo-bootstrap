@@ -157,8 +157,10 @@ resource "google_service_account_iam_member" "ar" {
   ]
 }
 
-resource "google_artifact_registry_repository" "upstream_nginx" {
-  for_each      = local.has_nginx_jwt_secret ? { nginx = true } : {}
+# Add any upstream OCI repositories as remote Artifact Registries
+
+resource "google_artifact_registry_repository" "upstream_oci_nginx" {
+  for_each      = local.has_nginx_jwt_secret ? { oci-nginx = true } : {}
   project       = var.project_id
   repository_id = format("%s-%s", var.name, each.key)
   format        = "DOCKER"
@@ -177,19 +179,20 @@ resource "google_artifact_registry_repository" "upstream_nginx" {
     upstream_credentials {
       username_password_credentials {
         username                = var.nginx_jwt
-        password_secret_version = format("%s/versions/latest", one([for k, v in module.nginx_upstream_password : v.id]))
+        password_secret_version = format("%s/versions/latest", one([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.id]))
       }
     }
   }
 
   depends_on = [
     google_project_service.apis,
-    module.nginx_upstream_password,
+    google_secret_manager_secret.upstream_oci_password_nginx,
   ]
 }
 
-resource "google_artifact_registry_repository" "upstream_f5_ai" {
-  for_each      = local.has_f5_ai_harbor_credentials_secret ? { "f5-ai" = true } : {}
+# Create a remote repository for F5 AI containers and charts.
+resource "google_artifact_registry_repository" "upstream_oci_f5_ai" {
+  for_each      = local.has_f5_ai_repo_credentials_secret ? { "oci-f5-ai" = true } : {}
   project       = var.project_id
   repository_id = format("%s-%s", var.name, each.key)
   format        = "DOCKER"
@@ -207,18 +210,20 @@ resource "google_artifact_registry_repository" "upstream_f5_ai" {
     }
     upstream_credentials {
       username_password_credentials {
-        username                = var.f5_ai_harbor_credentials.username
-        password_secret_version = format("%s/versions/latest", one([for k, v in module.f5_ai_harbor_upstream_password : v.id]))
+        username                = var.f5_ai_repo_credentials.username
+        password_secret_version = format("%s/versions/latest", one([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.id]))
       }
     }
   }
 
   depends_on = [
     google_project_service.apis,
-    module.f5_ai_harbor_upstream_password,
+    google_secret_manager_secret.upstream_oci_password_f5_ai,
   ]
 }
 
+# Create a virtual OCI repository, if requested. The project local, and any remote registries will be added to give a
+# single image repository.
 resource "google_artifact_registry_repository" "oci_virt" {
   for_each      = local.enable_virtual_oci_registry ? { oci-virt = true } : {}
   project       = var.project_id
@@ -238,7 +243,7 @@ resource "google_artifact_registry_repository" "oci_virt" {
       }
     }
     dynamic "upstream_policies" {
-      for_each = google_artifact_registry_repository.upstream_nginx
+      for_each = google_artifact_registry_repository.upstream_oci_nginx
       content {
         id         = upstream_policies.value.repository_id
         repository = upstream_policies.value.id
@@ -246,7 +251,7 @@ resource "google_artifact_registry_repository" "oci_virt" {
       }
     }
     dynamic "upstream_policies" {
-      for_each = google_artifact_registry_repository.upstream_f5_ai
+      for_each = google_artifact_registry_repository.upstream_oci_f5_ai
       content {
         id         = upstream_policies.value.repository_id
         repository = upstream_policies.value.id

@@ -58,10 +58,18 @@ locals {
   secret_manager_apis = [
     "secretmanager.googleapis.com",
   ]
+  # Will Artifact Registry be required?
+  enable_artifact_registry    = try(var.gcp_options.ar.oci, true) || try(var.gcp_options.ar.deb, false) || try(var.gcp_options.rpm, false) || local.has_nginx_jwt_secret || local.has_f5_ai_harbor_credentials_secret
+  enable_virtual_oci_registry = (try(var.gcp_options.ar.oci, true) || local.has_nginx_jwt_secret || local.has_f5_ai_harbor_credentials_secret) && try(var.gcp_options.create_virtual_oci_repository, false)
   # Determine which secrets should be created with corresponding GitHub action values
   has_nginx_jwt_secret                = try(length(trimspace(var.nginx_jwt)), 0) > 0
   has_f5_ai_license_secret            = try(length(trimspace(var.f5_ai_license)), 0) > 0
   has_f5_ai_harbor_credentials_secret = try(length(trimspace(var.f5_ai_harbor_credentials.username)), 0) > 0 && try(length(trimspace(var.f5_ai_harbor_credentials.password)), 0) > 0
+  # List of service identities that are required for the module
+  service_identities = concat(
+    try(var.gcp_options.enable_cloud_deploy, true) ? local.cloud_deploy_apis : [],
+    local.enable_artifact_registry ? ["artifactregistry.googleapis.com"] : [],
+  )
 }
 
 # Bootstrapping should enable the minimal set of services required to complete bootstrap and permit additional actions to be executed.
@@ -69,7 +77,7 @@ resource "google_project_service" "apis" {
   for_each = { for api in setunion(
     local.base_apis,
     try(var.gcp_options.create_state_bucket, true) ? local.storage_apis : [],
-    try(var.gcp_options.ar.oci, true) || try(var.gcp_options.ar.deb, false) || try(var.gcp_options.rpm, false) ? local.ar_apis : [],
+    local.enable_artifact_registry ? local.ar_apis : [],
     try(var.gcp_options.enable_infra_manager, true) ? local.infra_manager_apis : [],
     try(var.gcp_options.enable_cloud_deploy, true) ? local.cloud_deploy_apis : [],
     try(var.gcp_options.kms, false) ? local.kms_apis : [],
@@ -128,9 +136,9 @@ resource "google_project_iam_member" "iac" {
   ]
 }
 
-# Ensure that required service identities are known if Cloud Deploy is to be enabled.
+# Ensure that required service identities are known.
 resource "google_project_service_identity" "ids" {
-  for_each = try(var.gcp_options.enable_cloud_deploy, true) ? { for api in local.cloud_deploy_apis : api => true } : {}
+  for_each = { for api in local.service_identities : api => true }
   provider = google-beta
   project  = var.project_id
   service  = each.key

@@ -82,7 +82,8 @@ variable "gcp_options" {
       deb      = bool
       rpm      = bool
     }))
-    kms = optional(bool, false)
+    kms                           = optional(bool, false)
+    create_virtual_oci_repository = optional(bool, false)
   })
   nullable = true
   default = {
@@ -97,7 +98,8 @@ variable "gcp_options" {
       deb      = false
       rpm      = false
     }
-    kms = false
+    kms                           = false
+    create_virtual_oci_repository = false
   }
   description = <<-EOD
   Defines the parameters for the supporting Google Cloud resources that may not be essential to the demo. By default

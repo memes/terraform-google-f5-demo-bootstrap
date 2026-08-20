@@ -137,7 +137,12 @@ resource "github_actions_variable" "project_id" {
 }
 
 resource "github_actions_variable" "registry" {
-  for_each      = { for k, v in google_artifact_registry_repository.automation : format("%s_REGISTRY", upper(k)) => local.ar_repos[k].identifier }
+  for_each = merge(
+    { for k, v in google_artifact_registry_repository.automation : format("%s_REGISTRY", replace(upper(k), "/[^A-Z0-9_]/", "_")) => local.ar_repos[k].identifier },
+    { for k, v in google_artifact_registry_repository.upstream_nginx : format("%s_REGISTRY", replace(upper(k), "/[^A-Z0-9_]/", "_")) => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
+    { for k, v in google_artifact_registry_repository.upstream_f5_ai : format("%s_REGISTRY", replace(upper(k), "/[^A-Z0-9_]/", "_")) => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
+    { for k, v in google_artifact_registry_repository.oci_virt : format("%s_REGISTRY", replace(upper(k), "/[^A-Z0-9_]/", "_")) => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
+  )
   repository    = github_repository.automation.name
   variable_name = each.key
   value         = each.value

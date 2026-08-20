@@ -35,13 +35,6 @@ locals {
   )
 }
 
-resource "google_project_service_identity" "ar" {
-  provider = google-beta
-  for_each = try(var.gcp_options.ar.oci, true) || try(var.gcp_options.ar.deb, false) || try(var.gcp_options.rpm, false) || local.has_nginx_jwt_secret || local.has_f5_ai_harbor_credentials_secret ? { ar = true } : {}
-  project  = var.project_id
-  service  = "artifactregistry.googleapis.com"
-}
-
 # Create any needed artifact registry for the project
 resource "google_artifact_registry_repository" "automation" {
   for_each      = local.ar_repos
@@ -79,8 +72,8 @@ resource "google_artifact_registry_repository_iam_member" "iac" {
   ]
 }
 
-# Allow OIDC principals with attribute 'artifact_registry="reader"' read-only access to Artifact Registry
-resource "google_artifact_registry_repository_iam_member" "reader" {
+# Allow OIDC principals with attribute 'artifact_registry="reader"' read-only access to automation Artifact Registries
+resource "google_artifact_registry_repository_iam_member" "automation_reader" {
   for_each   = google_artifact_registry_repository.automation
   project    = each.value.project
   location   = each.value.location
@@ -94,8 +87,8 @@ resource "google_artifact_registry_repository_iam_member" "reader" {
   ]
 }
 
-# Allow OIDC principals with attribute 'artifact_registry="writer"' push access to Artifact Registry
-resource "google_artifact_registry_repository_iam_member" "writer" {
+# Allow OIDC principals with attribute 'artifact_registry="writer"' push access to automation Artifact Registries
+resource "google_artifact_registry_repository_iam_member" "automation_writer" {
   for_each   = google_artifact_registry_repository.automation
   project    = each.value.project
   location   = each.value.location
@@ -183,27 +176,15 @@ resource "google_artifact_registry_repository" "upstream_nginx" {
     }
     upstream_credentials {
       username_password_credentials {
-        username = format("%s:none", var.nginx_jwt)
+        username                = var.nginx_jwt
+        password_secret_version = format("%s/versions/latest", one([for k, v in module.nginx_upstream_password : v.id]))
       }
     }
   }
 
   depends_on = [
     google_project_service.apis,
-  ]
-}
-
-# Allow the Artifact Registry identity to read the password for remote F5 AI repository.
-resource "google_secret_manager_secret_iam_member" "ar_f5_ai" {
-  for_each  = module.f5_ai_harbor_password
-  project   = var.project_id
-  secret_id = each.value.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = one([for k, v in google_project_service_identity.ar : v.member])
-  depends_on = [
-    google_project_service.apis,
-    google_project_service_identity.ar,
-    module.f5_ai_harbor_password,
+    module.nginx_upstream_password,
   ]
 }
 
@@ -227,19 +208,19 @@ resource "google_artifact_registry_repository" "upstream_f5_ai" {
     upstream_credentials {
       username_password_credentials {
         username                = var.f5_ai_harbor_credentials.username
-        password_secret_version = format("%s/versions/latest", one([for k, v in module.f5_ai_harbor_password : v.id]))
+        password_secret_version = format("%s/versions/latest", one([for k, v in module.f5_ai_harbor_upstream_password : v.id]))
       }
     }
   }
 
   depends_on = [
     google_project_service.apis,
-    module.f5_ai_harbor_password,
+    module.f5_ai_harbor_upstream_password,
   ]
 }
 
-resource "google_artifact_registry_repository" "virtual" {
-  for_each      = try(var.gcp_options.ar.oci, true) || local.has_nginx_jwt_secret || local.has_f5_ai_harbor_credentials_secret ? { oci-virt = true } : {}
+resource "google_artifact_registry_repository" "oci_virt" {
+  for_each      = local.enable_virtual_oci_registry ? { oci-virt = true } : {}
   project       = var.project_id
   repository_id = format("%s-%s", var.name, each.key)
   format        = "DOCKER"
@@ -253,7 +234,7 @@ resource "google_artifact_registry_repository" "virtual" {
       content {
         id         = upstream_policies.value.repository_id
         repository = upstream_policies.value.id
-        priority   = 100
+        priority   = 1000
       }
     }
     dynamic "upstream_policies" {
@@ -261,7 +242,7 @@ resource "google_artifact_registry_repository" "virtual" {
       content {
         id         = upstream_policies.value.repository_id
         repository = upstream_policies.value.id
-        priority   = 500
+        priority   = 200
       }
     }
     dynamic "upstream_policies" {
@@ -269,8 +250,23 @@ resource "google_artifact_registry_repository" "virtual" {
       content {
         id         = upstream_policies.value.repository_id
         repository = upstream_policies.value.id
-        priority   = 500
+        priority   = 100
       }
     }
   }
+}
+
+# Allow OIDC principals with attribute 'artifact_registry="reader"' read-only access to virtual Artifact Registries
+resource "google_artifact_registry_repository_iam_member" "virtual_reader" {
+  for_each   = google_artifact_registry_repository.oci_virt
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.name
+  role       = "roles/artifactregistry.reader"
+  member     = format("principalSet://iam.googleapis.com/%s/attribute.artifact_registry/reader", google_iam_workload_identity_pool.bots.name)
+
+  depends_on = [
+    google_project_service.apis,
+    google_iam_workload_identity_pool.bots,
+  ]
 }

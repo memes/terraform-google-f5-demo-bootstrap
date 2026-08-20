@@ -26,7 +26,7 @@ output "registries" {
       }
     },
     {
-      for k, v in google_artifact_registry_repository.virtual : k => {
+      for k, v in google_artifact_registry_repository.oci_virt : k => {
         project  = v.project
         location = v.location
         name     = v.name
@@ -43,7 +43,7 @@ output "repo_identifiers" {
     { for k, v in google_artifact_registry_repository.automation : k => local.ar_repos[k].identifier },
     { for k, v in google_artifact_registry_repository.upstream_nginx : k => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
     { for k, v in google_artifact_registry_repository.upstream_f5_ai : k => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
-    { for k, v in google_artifact_registry_repository.virtual : k => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
+    { for k, v in google_artifact_registry_repository.oci_virt : k => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
   )
   description = <<-EOD
   A map of Artifact Registry resource types to canonical access identifiers.

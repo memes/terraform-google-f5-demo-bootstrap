@@ -133,7 +133,7 @@ run "null" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -275,7 +275,7 @@ run "empty" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -418,7 +418,7 @@ run "private" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -561,7 +561,7 @@ run "name" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repos."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -704,7 +704,7 @@ run "description" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -847,7 +847,7 @@ run "empty_template" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -990,7 +990,7 @@ run "template" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -1133,7 +1133,7 @@ run "empty_collaborators" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -1281,7 +1281,7 @@ run "collaborators" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -1424,7 +1424,7 @@ run "ssh_deploy_key" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -1567,7 +1567,7 @@ run "empty_org" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -1717,7 +1717,7 @@ run "org" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"

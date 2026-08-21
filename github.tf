@@ -196,3 +196,9 @@ resource "github_actions_variable" "secrets" {
   variable_name = each.key
   value         = each.value
 }
+
+resource "github_actions_variable" "bootstrap_name" {
+  repository    = github_repository.automation.name
+  variable_name = "BOOTSTRAP_NAME"
+  value         = var.name
+}

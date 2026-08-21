@@ -149,3 +149,10 @@ output "secrets" {
   If an F5 AI license secret was created during bootstrap, return the fully-qualified and local identifiers, if appropriate.
   EOD
 }
+
+output "bootstrap_name" {
+  value       = var.name
+  description = <<-EOD
+  The name used when bootstrapping resources.
+  EOD
+}

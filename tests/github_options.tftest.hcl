@@ -148,12 +148,12 @@ run "null" {
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
   }
   assert {
-    condition     = try(length(github_actions_variable.f5_ai_license), 0) == 0
-    error_message = "Expected no GitHub variables for F5 AI license secret."
+    condition     = try(length(github_actions_variable.secrets), 0) == 0
+    error_message = "Expected no GitHub variables for additional secrets."
   }
   assert {
-    condition     = alltrue([for k, v in github_actions_variable.f5_ai_license : v.variable_name == "F5_AI_LICENSE_SECRET"])
-    error_message = "Expected GitHub variable for F5 AI license to be named 'F5_AI_LICENSE_SECRET'."
+    condition     = alltrue([for k, v in github_actions_variable.secrets : can(regex("^[A-Z_]+_SECRET$", v.variable_name))])
+    error_message = "Expected GitHub variable for additional secrets to be named correctly."
   }
 
   # GitHub outputs
@@ -290,12 +290,12 @@ run "empty" {
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
   }
   assert {
-    condition     = try(length(github_actions_variable.f5_ai_license), 0) == 0
-    error_message = "Expected no GitHub variables for F5 AI license secret."
+    condition     = try(length(github_actions_variable.secrets), 0) == 0
+    error_message = "Expected no GitHub variables for additional secrets."
   }
   assert {
-    condition     = alltrue([for k, v in github_actions_variable.f5_ai_license : v.variable_name == "F5_AI_LICENSE_SECRET"])
-    error_message = "Expected GitHub variable for F5 AI license to be named 'F5_AI_LICENSE_SECRET'."
+    condition     = alltrue([for k, v in github_actions_variable.secrets : can(regex("^[A-Z_]+_SECRET$", v.variable_name))])
+    error_message = "Expected GitHub variable for additional secrets to be named correctly."
   }
 
   # GitHub outputs
@@ -433,12 +433,12 @@ run "private" {
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
   }
   assert {
-    condition     = try(length(github_actions_variable.f5_ai_license), 0) == 0
-    error_message = "Expected no GitHub variables for F5 AI license secret."
+    condition     = try(length(github_actions_variable.secrets), 0) == 0
+    error_message = "Expected no GitHub variables for additional secrets."
   }
   assert {
-    condition     = alltrue([for k, v in github_actions_variable.f5_ai_license : v.variable_name == "F5_AI_LICENSE_SECRET"])
-    error_message = "Expected GitHub variable for F5 AI license to be named 'F5_AI_LICENSE_SECRET'."
+    condition     = alltrue([for k, v in github_actions_variable.secrets : can(regex("^[A-Z_]+_SECRET$", v.variable_name))])
+    error_message = "Expected GitHub variable for additional secrets to be named correctly."
   }
 
   # GitHub outputs
@@ -576,12 +576,12 @@ run "name" {
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
   }
   assert {
-    condition     = try(length(github_actions_variable.f5_ai_license), 0) == 0
-    error_message = "Expected no GitHub variables for F5 AI license secret."
+    condition     = try(length(github_actions_variable.secrets), 0) == 0
+    error_message = "Expected no GitHub variables for additional secrets."
   }
   assert {
-    condition     = alltrue([for k, v in github_actions_variable.f5_ai_license : v.variable_name == "F5_AI_LICENSE_SECRET"])
-    error_message = "Expected GitHub variable for F5 AI license to be named 'F5_AI_LICENSE_SECRET'."
+    condition     = alltrue([for k, v in github_actions_variable.secrets : can(regex("^[A-Z_]+_SECRET$", v.variable_name))])
+    error_message = "Expected GitHub variable for additional secrets to be named correctly."
   }
 
   # GitHub outputs
@@ -719,12 +719,12 @@ run "description" {
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
   }
   assert {
-    condition     = try(length(github_actions_variable.f5_ai_license), 0) == 0
-    error_message = "Expected no GitHub variables for F5 AI license secret."
+    condition     = try(length(github_actions_variable.secrets), 0) == 0
+    error_message = "Expected no GitHub variables for additional secrets."
   }
   assert {
-    condition     = alltrue([for k, v in github_actions_variable.f5_ai_license : v.variable_name == "F5_AI_LICENSE_SECRET"])
-    error_message = "Expected GitHub variable for F5 AI license to be named 'F5_AI_LICENSE_SECRET'."
+    condition     = alltrue([for k, v in github_actions_variable.secrets : can(regex("^[A-Z_]+_SECRET$", v.variable_name))])
+    error_message = "Expected GitHub variable for additional secrets to be named correctly."
   }
 
   # GitHub outputs
@@ -862,12 +862,12 @@ run "empty_template" {
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
   }
   assert {
-    condition     = try(length(github_actions_variable.f5_ai_license), 0) == 0
-    error_message = "Expected no GitHub variables for F5 AI license secret."
+    condition     = try(length(github_actions_variable.secrets), 0) == 0
+    error_message = "Expected no GitHub variables for additional secrets."
   }
   assert {
-    condition     = alltrue([for k, v in github_actions_variable.f5_ai_license : v.variable_name == "F5_AI_LICENSE_SECRET"])
-    error_message = "Expected GitHub variable for F5 AI license to be named 'F5_AI_LICENSE_SECRET'."
+    condition     = alltrue([for k, v in github_actions_variable.secrets : can(regex("^[A-Z_]+_SECRET$", v.variable_name))])
+    error_message = "Expected GitHub variable for additional secrets to be named correctly."
   }
 
   # GitHub outputs
@@ -1005,12 +1005,12 @@ run "template" {
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
   }
   assert {
-    condition     = try(length(github_actions_variable.f5_ai_license), 0) == 0
-    error_message = "Expected no GitHub variables for F5 AI license secret."
+    condition     = try(length(github_actions_variable.secrets), 0) == 0
+    error_message = "Expected no GitHub variables for additional secrets."
   }
   assert {
-    condition     = alltrue([for k, v in github_actions_variable.f5_ai_license : v.variable_name == "F5_AI_LICENSE_SECRET"])
-    error_message = "Expected GitHub variable for F5 AI license to be named 'F5_AI_LICENSE_SECRET'."
+    condition     = alltrue([for k, v in github_actions_variable.secrets : can(regex("^[A-Z_]+_SECRET$", v.variable_name))])
+    error_message = "Expected GitHub variable for additional secrets to be named correctly."
   }
 
   # GitHub outputs
@@ -1148,12 +1148,12 @@ run "empty_collaborators" {
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
   }
   assert {
-    condition     = try(length(github_actions_variable.f5_ai_license), 0) == 0
-    error_message = "Expected no GitHub variables for F5 AI license secret."
+    condition     = try(length(github_actions_variable.secrets), 0) == 0
+    error_message = "Expected no GitHub variables for additional secrets."
   }
   assert {
-    condition     = alltrue([for k, v in github_actions_variable.f5_ai_license : v.variable_name == "F5_AI_LICENSE_SECRET"])
-    error_message = "Expected GitHub variable for F5 AI license to be named 'F5_AI_LICENSE_SECRET'."
+    condition     = alltrue([for k, v in github_actions_variable.secrets : can(regex("^[A-Z_]+_SECRET$", v.variable_name))])
+    error_message = "Expected GitHub variable for additional secrets to be named correctly."
   }
 
   # GitHub outputs
@@ -1296,12 +1296,12 @@ run "collaborators" {
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
   }
   assert {
-    condition     = try(length(github_actions_variable.f5_ai_license), 0) == 0
-    error_message = "Expected no GitHub variables for F5 AI license secret."
+    condition     = try(length(github_actions_variable.secrets), 0) == 0
+    error_message = "Expected no GitHub variables for additional secrets."
   }
   assert {
-    condition     = alltrue([for k, v in github_actions_variable.f5_ai_license : v.variable_name == "F5_AI_LICENSE_SECRET"])
-    error_message = "Expected GitHub variable for F5 AI license to be named 'F5_AI_LICENSE_SECRET'."
+    condition     = alltrue([for k, v in github_actions_variable.secrets : can(regex("^[A-Z_]+_SECRET$", v.variable_name))])
+    error_message = "Expected GitHub variable for additional secrets to be named correctly."
   }
 
   # GitHub outputs
@@ -1439,12 +1439,12 @@ run "ssh_deploy_key" {
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
   }
   assert {
-    condition     = try(length(github_actions_variable.f5_ai_license), 0) == 0
-    error_message = "Expected no GitHub variables for F5 AI license secret."
+    condition     = try(length(github_actions_variable.secrets), 0) == 0
+    error_message = "Expected no GitHub variables for additional secrets."
   }
   assert {
-    condition     = alltrue([for k, v in github_actions_variable.f5_ai_license : v.variable_name == "F5_AI_LICENSE_SECRET"])
-    error_message = "Expected GitHub variable for F5 AI license to be named 'F5_AI_LICENSE_SECRET'."
+    condition     = alltrue([for k, v in github_actions_variable.secrets : can(regex("^[A-Z_]+_SECRET$", v.variable_name))])
+    error_message = "Expected GitHub variable for additional secrets to be named correctly."
   }
 
   # GitHub outputs
@@ -1582,12 +1582,12 @@ run "empty_org" {
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
   }
   assert {
-    condition     = try(length(github_actions_variable.f5_ai_license), 0) == 0
-    error_message = "Expected no GitHub variables for F5 AI license secret."
+    condition     = try(length(github_actions_variable.secrets), 0) == 0
+    error_message = "Expected no GitHub variables for additional secrets."
   }
   assert {
-    condition     = alltrue([for k, v in github_actions_variable.f5_ai_license : v.variable_name == "F5_AI_LICENSE_SECRET"])
-    error_message = "Expected GitHub variable for F5 AI license to be named 'F5_AI_LICENSE_SECRET'."
+    condition     = alltrue([for k, v in github_actions_variable.secrets : can(regex("^[A-Z_]+_SECRET$", v.variable_name))])
+    error_message = "Expected GitHub variable for additional secrets to be named correctly."
   }
 
   # GitHub outputs
@@ -1732,12 +1732,12 @@ run "org" {
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
   }
   assert {
-    condition     = try(length(github_actions_variable.f5_ai_license), 0) == 0
-    error_message = "Expected no GitHub variables for F5 AI license secret."
+    condition     = try(length(github_actions_variable.secrets), 0) == 0
+    error_message = "Expected no GitHub variables for additional secrets."
   }
   assert {
-    condition     = alltrue([for k, v in github_actions_variable.f5_ai_license : v.variable_name == "F5_AI_LICENSE_SECRET"])
-    error_message = "Expected GitHub variable for F5 AI license to be named 'F5_AI_LICENSE_SECRET'."
+    condition     = alltrue([for k, v in github_actions_variable.secrets : can(regex("^[A-Z_]+_SECRET$", v.variable_name))])
+    error_message = "Expected GitHub variable for additional secrets to be named correctly."
   }
 
   # GitHub outputs

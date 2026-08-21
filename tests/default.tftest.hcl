@@ -529,12 +529,12 @@ run "github" {
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
   }
   assert {
-    condition     = try(length(github_actions_variable.f5_ai_license), 0) == 0
-    error_message = "Expected no GitHub variables for F5 AI license secret."
+    condition     = try(length(github_actions_variable.secrets), 0) == 0
+    error_message = "Expected no GitHub variables for additional secrets."
   }
   assert {
-    condition     = alltrue([for k, v in github_actions_variable.f5_ai_license : v.variable_name == "F5_AI_LICENSE_SECRET"])
-    error_message = "Expected GitHub variable for F5 AI license to be named 'F5_AI_LICENSE_SECRET'."
+    condition     = alltrue([for k, v in github_actions_variable.secrets : can(regex("^[A-Z_]+_SECRET$", v.variable_name))])
+    error_message = "Expected GitHub variable for additional secrets to be named correctly."
   }
 
   # Actions permissions
@@ -671,16 +671,8 @@ run "outputs" {
     error_message = "Expected nginx_jwt output field id to be null."
   }
   assert {
-    condition     = output.f5_ai_license != null
-    error_message = "Expected f5_ai_license output to be not null."
-  }
-  assert {
-    condition     = output.f5_ai_license.secret_id == null
-    error_message = "Expected f5_ai_license output field secret_id to be null."
-  }
-  assert {
-    condition     = output.f5_ai_license.id == null
-    error_message = "Expected f5_ai_license output field id to be null."
+    condition     = try(length(output.secrets), 0) == 0
+    error_message = "Expected secrets e output to be empty."
   }
 }
 
@@ -711,11 +703,11 @@ run "secrets" {
     error_message = "Expected upstream F5 AI harbor secret name to be 'default-test-upstream-oci-password-f5-ai'."
   }
   assert {
-    condition     = try(length(google_secret_manager_secret.f5_ai_license), 0) == 0
-    error_message = "Expected no F5 AI license secrets to be created."
+    condition     = try(length(google_secret_manager_secret.secrets), 0) == 0
+    error_message = "Expected no additional secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id == "default-test-f5-ai-license"])
-    error_message = "Expected F5 AI license secret name to be 'default-test-f5-ai-license'."
+    condition     = alltrue([for k, v in google_secret_manager_secret.secrets : startswith(v.secret_id, "default-test-")])
+    error_message = "Expected each additional secret name to start with 'default-test-'."
   }
 }

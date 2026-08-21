@@ -214,17 +214,6 @@ variable "state_bucket_options" {
   EOD
 }
 
-variable "f5_ai_license" {
-  type        = string
-  nullable    = true
-  default     = null
-  description = <<-EOD
-  An optional F5 AI license to store in Google Secret Manager.
-  NOTE: Principal access to the secret will not be established by this module; module consumers will be required to
-  assign the appropriate IAM roles to read or modify the secret as needed.
-  EOD
-}
-
 variable "f5_ai_repo_credentials" {
   type = object({
     username = string
@@ -240,5 +229,25 @@ variable "f5_ai_repo_credentials" {
   An optional username and password pair for the upstream F5 AI container repository. If provided, a remote Artifact
   Registry will be created to reference the upstream F5 AI private repository for transparent access to the
   private images, along with a Secret Manager secret to contain the password.
+  EOD
+}
+
+variable "secrets" {
+  type     = map(string)
+  nullable = true
+  validation {
+    # Keys become secret names when combined with name variable as '{name}-{key}', with a maximum limit of 255 combined chars.
+    condition     = try(length(var.secrets), 0) == 0 ? true : alltrue([for k, v in var.secrets : can(regex("^[a-zA-Z0-9_-]{1,228}$", k))])
+    error_message = "Each secrets entry key must be alphanumeric, underscore, or hyphen, with a maximum length of 228."
+  }
+  default     = null
+  description = <<-EOD
+  An optional map of Secret names to values (strings-only) that will be created. A Secret Manager secret will be created
+  for each key in the map, and a GitHub actions variable of the form `{KEY_NAME}_SECRET` containing the Secret Manager
+  identity. The value must be a string; use `jsonencode` or similar to include structured or binary data.
+  NOTE: Values are allowed to be null/empty.
+  NOTE 2: The input variables `nginx_jwt` and `f5_ai_repo_credentials` are preferred for those secrets, as they will
+  trigger creation of Artifact Registries. Avoid using the same value in both places, but use `secrets` input if you
+  want to store either of those without triggering creation of supporting resources.
   EOD
 }

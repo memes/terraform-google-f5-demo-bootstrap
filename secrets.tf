@@ -81,11 +81,10 @@ resource "google_secret_manager_secret_iam_member" "upstream_oci_password_f5_ai"
   ]
 }
 
-# F5 AI Guardrails and Red Team deployments need the license token; if provided, create a secret containing the token
-# but do not automatically assign accessors. Consumers of the module can add appropriate access to IAM principals as
-# needed.
-resource "google_secret_manager_secret" "f5_ai_license" {
-  for_each  = local.has_f5_ai_license_secret ? { f5-ai-license = true } : {}
+# Create additional secrets for each entry in `secrets` input variable, but do not automatically assign accessors.
+# Consumers of the module can add appropriate access to IAM principals as needed.
+resource "google_secret_manager_secret" "secrets" {
+  for_each  = var.secrets == null ? {} : var.secrets
   project   = var.project_id
   secret_id = format("%s-%s", var.name, each.key)
   labels    = var.labels
@@ -95,8 +94,8 @@ resource "google_secret_manager_secret" "f5_ai_license" {
   }
 }
 
-resource "google_secret_manager_secret_version" "f5_ai_license" {
-  for_each    = google_secret_manager_secret.f5_ai_license
+resource "google_secret_manager_secret_version" "secrets" {
+  for_each    = { for k, v in google_secret_manager_secret.secrets : k => v if coalesce(try(var.secrets[k], null), "unspecified") != "unspecified" }
   secret      = each.value.id
-  secret_data = var.f5_ai_license
+  secret_data = var.secrets[each.key]
 }

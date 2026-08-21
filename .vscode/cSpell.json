@@ -33,6 +33,7 @@
         "pipx",
         "secretmanager",
         "serviceusage",
+        "startswith",
         "tflint",
         "tftest",
         "thumbsup",

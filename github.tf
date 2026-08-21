@@ -190,9 +190,8 @@ resource "github_workflow_repository_permissions" "automation" {
   can_approve_pull_request_reviews = true
 }
 
-
-resource "github_actions_variable" "f5_ai_license" {
-  for_each      = { for secret in google_secret_manager_secret.f5_ai_license : "F5_AI_LICENSE_SECRET" => secret.id }
+resource "github_actions_variable" "secrets" {
+  for_each      = { for k, v in google_secret_manager_secret.secrets : format("%s_SECRET", replace(upper(k), "/[^A-Z0-9_]/", "_")) => v.id }
   repository    = github_repository.automation.name
   variable_name = each.key
   value         = each.value

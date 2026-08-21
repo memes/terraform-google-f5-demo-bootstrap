@@ -139,10 +139,11 @@ output "nginx_jwt" {
   EOD
 }
 
-output "f5_ai_license" {
-  value = {
-    secret_id = one([for k, v in google_secret_manager_secret.f5_ai_license : v.secret_id])
-    id        = one([for k, v in google_secret_manager_secret.f5_ai_license : v.id])
+output "secrets" {
+  value = { for k, v in google_secret_manager_secret.secrets : k => {
+    id        = v.id
+    secret_id = v.secret_id
+    }
   }
   description = <<-EOD
   If an F5 AI license secret was created during bootstrap, return the fully-qualified and local identifiers, if appropriate.

@@ -245,6 +245,64 @@ resource "google_artifact_registry_repository" "upstream_oci_docker_hub" {
   ]
 }
 
+# Grant the service identity for Artifact Registry access to each local and upstream registry if a virtual registry will
+# be created.
+resource "google_artifact_registry_repository_iam_member" "identity_automation" {
+  for_each   = local.enable_virtual_oci_registry ? google_artifact_registry_repository.automation : {}
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.name
+  role       = "roles/artifactregistry.reader"
+  member     = google_project_service_identity.ids["artifactregistry.googleapis.com"].member
+
+  depends_on = [
+    google_project_service_identity.ids,
+    google_artifact_registry_repository.automation,
+  ]
+}
+
+resource "google_artifact_registry_repository_iam_member" "identity_upstream_oci_nginx" {
+  for_each   = local.enable_virtual_oci_registry ? google_artifact_registry_repository.upstream_oci_nginx : {}
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.name
+  role       = "roles/artifactregistry.reader"
+  member     = google_project_service_identity.ids["artifactregistry.googleapis.com"].member
+
+  depends_on = [
+    google_project_service_identity.ids,
+    google_artifact_registry_repository.upstream_oci_nginx,
+  ]
+}
+
+resource "google_artifact_registry_repository_iam_member" "identity_upstream_oci_f5_ai" {
+  for_each   = local.enable_virtual_oci_registry ? google_artifact_registry_repository.upstream_oci_f5_ai : {}
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.name
+  role       = "roles/artifactregistry.reader"
+  member     = google_project_service_identity.ids["artifactregistry.googleapis.com"].member
+
+  depends_on = [
+    google_project_service_identity.ids,
+    google_artifact_registry_repository.upstream_oci_nginx,
+  ]
+}
+
+resource "google_artifact_registry_repository_iam_member" "identity_upstream_oci_docker_hub" {
+  for_each   = local.enable_virtual_oci_registry ? google_artifact_registry_repository.upstream_oci_docker_hub : {}
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.name
+  role       = "roles/artifactregistry.reader"
+  member     = google_project_service_identity.ids["artifactregistry.googleapis.com"].member
+
+  depends_on = [
+    google_project_service_identity.ids,
+    google_artifact_registry_repository.upstream_oci_nginx,
+  ]
+}
+
 # Create a virtual OCI repository, if requested. The project local, and any remote registries will be added to give a
 # single image repository.
 resource "google_artifact_registry_repository" "oci_virt" {
@@ -270,7 +328,7 @@ resource "google_artifact_registry_repository" "oci_virt" {
       content {
         id         = upstream_policies.value.repository_id
         repository = upstream_policies.value.id
-        priority   = 500
+        priority   = 100
       }
     }
     dynamic "upstream_policies" {
@@ -278,7 +336,7 @@ resource "google_artifact_registry_repository" "oci_virt" {
       content {
         id         = upstream_policies.value.repository_id
         repository = upstream_policies.value.id
-        priority   = 200
+        priority   = 500
       }
     }
     dynamic "upstream_policies" {
@@ -286,7 +344,7 @@ resource "google_artifact_registry_repository" "oci_virt" {
       content {
         id         = upstream_policies.value.repository_id
         repository = upstream_policies.value.id
-        priority   = 100
+        priority   = 400
       }
     }
   }

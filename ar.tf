@@ -170,7 +170,7 @@ resource "google_artifact_registry_repository" "upstream_oci_nginx" {
   mode          = "REMOTE_REPOSITORY"
   remote_repository_config {
     description                 = "F5 NGINX+ private Docker repository"
-    disable_upstream_validation = true
+    disable_upstream_validation = false
     docker_repository {
       custom_repository {
         uri = "https://private-registry.nginx.com"
@@ -202,7 +202,7 @@ resource "google_artifact_registry_repository" "upstream_oci_f5_ai" {
   mode          = "REMOTE_REPOSITORY"
   remote_repository_config {
     description                 = "F5 AI private Harbor repository"
-    disable_upstream_validation = true
+    disable_upstream_validation = false
     docker_repository {
       custom_repository {
         uri = "https://harbor.calypsoai.app"
@@ -219,6 +219,29 @@ resource "google_artifact_registry_repository" "upstream_oci_f5_ai" {
   depends_on = [
     google_project_service.apis,
     google_secret_manager_secret_iam_member.upstream_oci_password_f5_ai,
+  ]
+}
+
+# Create a remote repository for public docker hub artifacts.
+resource "google_artifact_registry_repository" "upstream_oci_docker_hub" {
+  for_each      = try(var.gcp_options.ar.docker_hub, false) ? { "oci-docker-hub" = true } : {}
+  project       = var.project_id
+  repository_id = format("%s-%s", var.name, each.key)
+  format        = "DOCKER"
+  location      = try(var.gcp_options.ar.location, "us")
+  description   = format("Upstream public Docker Hub repository for %s", var.name)
+  labels        = var.labels
+  mode          = "REMOTE_REPOSITORY"
+  remote_repository_config {
+    description                 = "Upstream public Docker Hub repository"
+    disable_upstream_validation = true
+    docker_repository {
+      public_repository = "DOCKER_HUB"
+    }
+  }
+
+  depends_on = [
+    google_project_service.apis,
   ]
 }
 
@@ -240,6 +263,14 @@ resource "google_artifact_registry_repository" "oci_virt" {
         id         = upstream_policies.value.repository_id
         repository = upstream_policies.value.id
         priority   = 1000
+      }
+    }
+    dynamic "upstream_policies" {
+      for_each = google_artifact_registry_repository.upstream_oci_docker_hub
+      content {
+        id         = upstream_policies.value.repository_id
+        repository = upstream_policies.value.id
+        priority   = 500
       }
     }
     dynamic "upstream_policies" {

@@ -59,9 +59,9 @@ locals {
     "secretmanager.googleapis.com",
   ]
   # Will Artifact Registry be required?
-  enable_artifact_registry = try(var.gcp_options.ar.oci, true) || try(var.gcp_options.ar.deb, false) || try(var.gcp_options.rpm, false) || local.has_nginx_jwt_secret || local.has_f5_ai_repo_credentials_secret
+  enable_artifact_registry = try(var.gcp_options.ar.oci, true) || try(var.gcp_options.ar.deb, false) || try(var.gcp_options.ar.rpm, false) || try(var.gcp_options.ar.docker_hub, false) || local.has_nginx_jwt_secret || local.has_f5_ai_repo_credentials_secret
   # Only create a virtual OCI registry if the flag is set and there is at least one OCI repo.
-  enable_virtual_oci_registry = try(var.gcp_options.ar.virtual_oci, false) && (try(var.gcp_options.ar.oci, true) || local.has_nginx_jwt_secret || local.has_f5_ai_repo_credentials_secret)
+  enable_virtual_oci_registry = try(var.gcp_options.ar.virtual_oci, false) && (try(var.gcp_options.ar.oci, true) || try(var.gcp_options.ar.docker_hub, false) || local.has_nginx_jwt_secret || local.has_f5_ai_repo_credentials_secret)
   # Determine which secrets should be created with corresponding GitHub action values.
   has_nginx_jwt_secret              = try(length(trimspace(var.nginx_jwt)), 0) > 0
   has_f5_ai_repo_credentials_secret = try(length(trimspace(var.f5_ai_repo_credentials.username)), 0) > 0 && try(length(trimspace(var.f5_ai_repo_credentials.password)), 0) > 0

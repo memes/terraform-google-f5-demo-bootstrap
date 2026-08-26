@@ -81,6 +81,7 @@ variable "gcp_options" {
       oci         = optional(bool, true)
       deb         = optional(bool, false)
       rpm         = optional(bool, false)
+      docker_hub  = optional(bool, false)
       virtual_oci = optional(bool, false)
     }))
     kms = optional(bool, false)
@@ -97,6 +98,7 @@ variable "gcp_options" {
       oci         = true
       deb         = false
       rpm         = false
+      docker_hub  = false
       virtual_oci = false
     }
     kms = false
@@ -106,7 +108,9 @@ variable "gcp_options" {
   service accounts and resources to support Infrastructure Manager (managed Terraform IaC) and Cloud Deploy (managed GKE
   and Cloud Run deployments) are created, along with a US Cloud Storage bucket to contain the Terraform state. An
   Artifact Repository will be created for OCI containers, but not DEB or RPM repos. Use this variable to override one or
-  more of these defaults as needed.
+  more of these defaults as needed. If the flag for virtual OCI repository is set, the local OCI registry, docker hub,
+  and one or both of NGINX private repository and F5 AI private repository will be added to the virtual server, with
+  highest priority assigned in that order.
   EOD
 }
 

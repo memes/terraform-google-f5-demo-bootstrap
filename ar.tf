@@ -10,7 +10,7 @@ locals {
         location    = try(var.gcp_options.ar.location, "us")
         identifier  = format("%s-docker.pkg.dev/%s/%s-oci", try(var.gcp_options.ar.location, "us"), var.project_id, var.name)
         docker_config = {
-          immutable_tags = true
+          immutable_tags = false
         }
       }
     } : {},
@@ -48,7 +48,7 @@ resource "google_artifact_registry_repository" "automation" {
   dynamic "docker_config" {
     for_each = try(each.value.docker_config, {})
     content {
-      immutable_tags = try(docker_config.value.immutable_tags, true)
+      immutable_tags = try(docker_config.value.immutable_tags, false)
     }
   }
 

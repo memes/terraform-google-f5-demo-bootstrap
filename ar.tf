@@ -33,6 +33,18 @@ locals {
       }
     } : {},
   )
+  upstream_ars = try(var.virtual_repo.ar_repos, null) == null ? {} : { for name in var.virtual_repo.ar_repos : name => {
+    repo     = regex("^.*-docker\\.pkg\\.dev/[^/]+/([^/]+)", name)[0]
+    location = regex("^(.*)-docker", name)[0]
+    project  = regex("docker\\.pkg\\.dev/([^/]+)/", name)[0]
+  } }
+}
+
+data "google_artifact_registry_repository" "upstream_ar" {
+  for_each      = local.upstream_ars
+  repository_id = each.value.repo
+  location      = each.value.location
+  project       = each.value.project
 }
 
 # Create any needed artifact registry for the project
@@ -158,7 +170,6 @@ resource "google_service_account_iam_member" "ar" {
 }
 
 # Add any upstream OCI repositories as remote Artifact Registries
-
 resource "google_artifact_registry_repository" "upstream_oci_nginx" {
   for_each      = local.has_nginx_jwt_secret ? { oci-nginx = true } : {}
   project       = var.project_id
@@ -224,7 +235,7 @@ resource "google_artifact_registry_repository" "upstream_oci_f5_ai" {
 
 # Create a remote repository for public docker hub artifacts.
 resource "google_artifact_registry_repository" "upstream_oci_docker_hub" {
-  for_each      = try(var.gcp_options.ar.docker_hub, false) ? { "oci-docker-hub" = true } : {}
+  for_each      = try(var.virtual_repo.docker_hub, false) ? { "oci-docker-hub" = true } : {}
   project       = var.project_id
   repository_id = format("%s-%s", var.name, each.key)
   format        = "DOCKER"
@@ -285,7 +296,7 @@ resource "google_artifact_registry_repository_iam_member" "identity_upstream_oci
 
   depends_on = [
     google_project_service_identity.ids,
-    google_artifact_registry_repository.upstream_oci_nginx,
+    google_artifact_registry_repository.upstream_oci_f5_ai,
   ]
 }
 
@@ -299,7 +310,20 @@ resource "google_artifact_registry_repository_iam_member" "identity_upstream_oci
 
   depends_on = [
     google_project_service_identity.ids,
-    google_artifact_registry_repository.upstream_oci_nginx,
+    google_artifact_registry_repository.upstream_oci_docker_hub,
+  ]
+}
+
+resource "google_artifact_registry_repository_iam_member" "identity_upstream_ar" {
+  for_each   = local.enable_virtual_oci_registry ? data.google_artifact_registry_repository.upstream_ar : {}
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.name
+  role       = "roles/artifactregistry.reader"
+  member     = google_project_service_identity.ids["artifactregistry.googleapis.com"].member
+
+  depends_on = [
+    google_project_service_identity.ids,
   ]
 }
 
@@ -336,7 +360,7 @@ resource "google_artifact_registry_repository" "oci_virt" {
       content {
         id         = upstream_policies.value.repository_id
         repository = upstream_policies.value.id
-        priority   = 500
+        priority   = 800
       }
     }
     dynamic "upstream_policies" {
@@ -344,7 +368,15 @@ resource "google_artifact_registry_repository" "oci_virt" {
       content {
         id         = upstream_policies.value.repository_id
         repository = upstream_policies.value.id
-        priority   = 400
+        priority   = 700
+      }
+    }
+    dynamic "upstream_policies" {
+      for_each = data.google_artifact_registry_repository.upstream_ar
+      content {
+        id         = upstream_policies.value.repository_id
+        repository = upstream_policies.value.id
+        priority   = 500
       }
     }
   }

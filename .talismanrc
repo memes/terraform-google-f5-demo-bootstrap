@@ -51,4 +51,6 @@ fileignoreconfig:
   checksum: f114503c0d050485ef11bb390349e42823cdd32a5a8fc418876b6706191eacbc
 - filename: tests/f5_ai_repo_credentials.tftest.hcl
   checksum: 257c08d952b68fe964fbe5d25e6c63ca29485f7a9c55ecad64279ea6d1c90378
+- filename: tests/repos.tftest.hcl
+  checksum: 38054675cc8d7200072966322d556a7f94b8e416f8f92f01b7009a3a82f5f8f4
 version: "1.0"

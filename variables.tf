@@ -77,12 +77,10 @@ variable "gcp_options" {
     disable_dependent_services  = optional(bool, false)
     create_state_bucket         = optional(bool, true)
     ar = optional(object({
-      location    = optional(string, "us")
-      oci         = optional(bool, true)
-      deb         = optional(bool, false)
-      rpm         = optional(bool, false)
-      docker_hub  = optional(bool, false)
-      virtual_oci = optional(bool, false)
+      location = optional(string, "us")
+      oci      = optional(bool, true)
+      deb      = optional(bool, false)
+      rpm      = optional(bool, false)
     }))
     kms = optional(bool, false)
   })
@@ -94,12 +92,10 @@ variable "gcp_options" {
     disable_dependent_services  = false
     create_state_bucket         = true
     ar = {
-      location    = "us"
-      oci         = true
-      deb         = false
-      rpm         = false
-      docker_hub  = false
-      virtual_oci = false
+      location = "us"
+      oci      = true
+      deb      = false
+      rpm      = false
     }
     kms = false
   }
@@ -108,9 +104,8 @@ variable "gcp_options" {
   service accounts and resources to support Infrastructure Manager (managed Terraform IaC) and Cloud Deploy (managed GKE
   and Cloud Run deployments) are created, along with a US Cloud Storage bucket to contain the Terraform state. An
   Artifact Repository will be created for OCI containers, but not DEB or RPM repos. Use this variable to override one or
-  more of these defaults as needed. If the flag for virtual OCI repository is set, the local OCI registry, docker hub,
-  and one or both of NGINX private repository and F5 AI private repository will be added to the virtual server, with
-  highest priority assigned in that order.
+  more of these defaults as needed.
+  NOTE: See also `virtual_repo` for additional OCI repository options.
   EOD
 }
 
@@ -253,5 +248,28 @@ variable "secrets" {
   NOTE 2: The input variables `nginx_jwt` and `f5_ai_repo_credentials` are preferred for those secrets, as they will
   trigger creation of Artifact Registries. Avoid using the same value in both places, but use `secrets` input if you
   want to store either of those without triggering creation of supporting resources.
+  EOD
+}
+
+variable "virtual_repo" {
+  type = object({
+    enable     = optional(bool, false)
+    docker_hub = optional(bool, false)
+    ar_repos   = optional(set(string))
+  })
+  nullable = true
+  validation {
+    condition     = var.virtual_repo == null ? true : (var.virtual_repo.ar_repos == null ? true : alltrue([for repo in var.virtual_repo.ar_repos : can(regex("^[a-z]{2,}(?:-[a-z]+[1-9])?-docker.pkg.dev/[^/]+/[^/]+", repo))]))
+    error_message = "Each ar_repos entry must be a valid Artifact Registry repository."
+  }
+  default     = null
+  description = <<-EOD
+  If enabled, a virtual Artifact Registry will be created that will provide unified access to the bootstrapped OCI
+  registry, if created, the upstream NGINX and F5 AI private repositories, if credentials were provided, and other
+  existing Artifact Registries, if provided. If the `docker_hub` flag is set, the publicly accessible artifacts on
+  Docker Hub will be made available through the virtual OCI repository.
+  NOTE: By default, a virtual repository will not be created. To instantiate a virtual repo, the `enable` flag must be
+  `true` and at least one bootstrapped repo (see `gcp_options.ar.oci` variable), or NGINX, F5 AI, or other upstream OCI
+  repo must be present.
   EOD
 }

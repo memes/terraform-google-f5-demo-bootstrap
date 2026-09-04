@@ -15,9 +15,22 @@ mock_provider "google" {
 }
 mock_provider "google-beta" {}
 mock_provider "github" {
+  mock_data "github_user" {
+    defaults = {
+      login = "mock_user"
+      id    = "11111"
+    }
+  }
+  mock_data "github_organization" {
+    defaults = {
+      login = "mock_org"
+      id    = "22222"
+    }
+  }
   mock_resource "github_repository" {
     defaults = {
       full_name = "mock/repo"
+      repo_id   = "33333"
     }
   }
 }
@@ -79,12 +92,13 @@ run "main" {
 
   # Google service identities required by bootstrap
   assert {
-    condition     = try(length(google_project_service_identity.ids), 0) == 2
-    error_message = "Expected project to have enabled 2 service identities."
+    condition     = try(length(google_project_service_identity.ids), 0) == 3
+    error_message = "Expected project to have enabled 3 service identities."
   }
   assert {
     condition = alltrue([for api in [
       # Expected APIs with required service identities
+      "artifactregistry.googleapis.com",
       "cloudbuild.googleapis.com",
       "clouddeploy.googleapis.com",
     ] : google_project_service_identity.ids[api] != null])
@@ -315,6 +329,18 @@ run "ar" {
     condition     = google_artifact_registry_repository.automation["oci"].repository_id == "default-test-oci" && google_artifact_registry_repository.automation["oci"].format == "DOCKER" && google_artifact_registry_repository.automation["oci"].location == "us"
     error_message = "Expected OCI AR repo properties to match expectations."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
+    error_message = "Expected no upstream repository for private NGINX."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
+    error_message = "Expected no upstream repository for private F5 AI."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.oci_virt), 0) == 0
+    error_message = "Expected no virtual repositories for Docker."
+  }
 
   # Repo IAM bindings
   assert {
@@ -329,32 +355,32 @@ run "ar" {
     error_message = "Expected IaC SA to have expected AR repo roles."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.reader), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR readers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_reader), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR readers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.reader : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_reader : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
       ) && contains([
         # Expected AR roles for readers
         "roles/artifactregistry.reader",
       ], v.role)
     ])
-    error_message = "Expected AR reader role bindings to workload identities matching pattern."
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on automation repos."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.writer), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR writers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_writer), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR writers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.writer : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_writer : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/writer$", v.member)
       ) && contains([
         # Expected AR roles for writers
         "roles/artifactregistry.writer",
       ], v.role)
     ])
-    error_message = "Expected AR writer role bindings to workload identities matching pattern."
+    error_message = "Expected AR writer role bindings to workload identities matching pattern on automation repos."
   }
   assert {
     condition     = try(length(google_service_account.ar), 0) == 1
@@ -384,6 +410,20 @@ run "ar" {
       ], v.role)
     ])
     error_message = "Expected AR SA act as role bindings to workload identities matching pattern."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository_iam_member.virtual_reader), 0) == 0
+    error_message = "Expected no IAM bindings for Workload Identity AR readers on virtual repos."
+  }
+  assert {
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.virtual_reader : can(
+      regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
+      ) && contains([
+        # Expected AR roles for readers
+        "roles/artifactregistry.reader",
+      ], v.role)
+    ])
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on virtual repos."
   }
 }
 
@@ -459,7 +499,7 @@ run "github" {
     error_message = "Expected GitHub OIDC provider to have cloud_deploy attribute set to 'enabled'."
   }
   assert {
-    condition     = google_iam_workload_identity_pool_provider.github.attribute_condition == "attribute.repository_owner == 'mock' && attribute.repository == 'mock/repo'"
+    condition     = google_iam_workload_identity_pool_provider.github.attribute_condition == "assertion.sub.startsWith('repo:mock_user@11111/default-test@33333:')"
     error_message = "Expected GitHub OIDC provider attribute_condition does not meet expectations."
   }
 
@@ -474,7 +514,7 @@ run "github" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -488,6 +528,58 @@ run "github" {
     condition     = alltrue([for k, v in github_actions_variable.nginx_jwt : v.variable_name == "NGINX_JWT_SECRET"])
     error_message = "Expected GitHub variable for NGINX JWT to be named 'NGINX_JWT_SECRET'."
   }
+  assert {
+    condition     = try(length(github_actions_variable.secrets), 0) == 0
+    error_message = "Expected no GitHub variables for additional secrets."
+  }
+  assert {
+    condition     = alltrue([for k, v in github_actions_variable.secrets : can(regex("^[A-Z_]+_SECRET$", v.variable_name))])
+    error_message = "Expected GitHub variable for additional secrets to be named correctly."
+  }
+
+  # Actions permissions
+  assert {
+    condition     = github_actions_repository_permissions.automation.enabled
+    error_message = "Expected GitHub actions to be enabled in repo."
+  }
+  assert {
+    condition     = !github_actions_repository_permissions.automation.sha_pinning_required
+    error_message = "Expected GitHub actions to NOT require SHA pinning."
+  }
+  assert {
+    condition = (
+      github_actions_repository_permissions.automation.allowed_actions == "selected" &&
+      try(length(github_actions_repository_permissions.automation.allowed_actions_config), 0) == 1
+    )
+    error_message = "Expected GitHub allowed repo actions to be configured with 1 config set."
+  }
+  assert {
+    condition = alltrue([for config in github_actions_repository_permissions.automation.allowed_actions_config :
+      try(length(config.patterns_allowed), 0) > 0 &&
+      alltrue([for allowed in config.patterns_allowed : contains([
+        "GoogleCloudPlatform/release-please-action@*",
+        "google-github-actions/auth@*",
+        "google-github-actions/create-cloud-deploy-release@*",
+        "google-github-actions/setup-gcloud@*",
+        "hashicorp/setup-terraform@*",
+        "jaxxstorm/action-install-gh-release@*",
+        "opentofu/setup-opentofu@*",
+        "pre-commit/action@*",
+        "terraform-linters/setup-tflint@*",
+      ], allowed)])
+    ])
+    error_message = "Expected GitHub allowed repo actions patterns to meet expectations, got '${jsonencode(github_actions_repository_permissions.automation.allowed_actions_config.*.patterns_allowed)}."
+  }
+
+  # Workflow permissions
+  assert {
+    condition     = github_workflow_repository_permissions.automation.default_workflow_permissions == "read"
+    error_message = "Expected GitHub workflow permissions for GITHUB_TOKEN to be 'read', got '${github_workflow_repository_permissions.automation.default_workflow_permissions}'."
+  }
+  assert {
+    condition     = github_workflow_repository_permissions.automation.can_approve_pull_request_reviews
+    error_message = "Expected GitHub workflow permissions to allow PR creation and approval."
+  }
 }
 
 # Assert resources in outputs.tf
@@ -499,7 +591,7 @@ run "outputs" {
   }
   assert {
     condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    error_message = "Expected registries output to have one entry."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -579,19 +671,43 @@ run "outputs" {
     error_message = "Expected nginx_jwt output field id to be null."
   }
   assert {
-    condition     = output.nginx_jwt.expiration_timestamp == null
-    error_message = "Expected nginx_jwt output field expiration_timestamp to be null."
+    condition     = try(length(output.secrets), 0) == 0
+    error_message = "Expected secrets e output to be empty."
   }
 }
 
 # Assert resources in secrets.tf
 run "secrets" {
   assert {
-    condition     = try(length(module.nginx_jwt), 0) == 0
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
     error_message = "Expected no NGINX JWT secrets to be created."
   }
   assert {
-    condition     = alltrue([for k, v in module.nginx_jwt : v.secret_id == "default-test-nginx-jwt"])
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "default-test-nginx-jwt"])
     error_message = "Expected NGINX JWT secret name to be 'default-test-nginx-jwt'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
+    error_message = "Expected no upstream NGINX Docker secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "default-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'default-test-upstream-oci-nginx'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
+    error_message = "Expected no upstream F5 AI harbor secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "default-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'default-test-upstream-oci-password-f5-ai'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.secrets), 0) == 0
+    error_message = "Expected no additional secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.secrets : startswith(v.secret_id, "default-test-")])
+    error_message = "Expected each additional secret name to start with 'default-test-'."
   }
 }

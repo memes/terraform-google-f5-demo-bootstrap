@@ -49,6 +49,7 @@ variable "github_options" {
     archive_on_destroy = optional(bool, true)
     collaborators      = optional(set(string))
     ssh_deploy_key     = optional(bool, false)
+    org                = optional(string)
   })
   nullable = true
   default = {
@@ -59,6 +60,7 @@ variable "github_options" {
     archive_on_destroy = true
     collaborators      = []
     ssh_deploy_key     = false
+    org                = null
   }
   description = <<-EOD
   Defines the parameters for the GitHub repository to create for the demo. By default the GitHub repo will be public,
@@ -75,10 +77,10 @@ variable "gcp_options" {
     disable_dependent_services  = optional(bool, false)
     create_state_bucket         = optional(bool, true)
     ar = optional(object({
-      location = string
-      oci      = bool
-      deb      = bool
-      rpm      = bool
+      location = optional(string, "us")
+      oci      = optional(bool, true)
+      deb      = optional(bool, false)
+      rpm      = optional(bool, false)
     }))
     kms = optional(bool, false)
   })
@@ -103,6 +105,7 @@ variable "gcp_options" {
   and Cloud Run deployments) are created, along with a US Cloud Storage bucket to contain the Terraform state. An
   Artifact Repository will be created for OCI containers, but not DEB or RPM repos. Use this variable to override one or
   more of these defaults as needed.
+  NOTE: See also `virtual_repo` for additional OCI repository options.
   EOD
 }
 
@@ -148,11 +151,18 @@ variable "iac_impersonators" {
 }
 
 variable "nginx_jwt" {
-  type        = string
-  nullable    = true
+  type     = string
+  nullable = true
+  validation {
+    condition     = try(length(var.nginx_jwt), 0) == 0 ? true : can(regex("^(?:\\.?(?:[A-Za-z0-9_-]+)){3}$", var.nginx_jwt))
+    error_message = "The nginx_jwt value must be null/empty or a valid JWT token."
+  }
   default     = null
   description = <<-EOD
-  An optional NGINX+ JWT to store in Google Secret Manager, with read-only access granted to AR service account.
+  An optional NGINX+ JWT to store in Google Secret Manager. If provided, a remote Artifact Registry will be created to
+  reference the upstream NGINX private Docker repository for transparent access to the private images.
+  NOTE: Principal access to the secret will not be established by this module; module consumers will be required to
+  assign the appropriate IAM roles to read or modify the secret as needed.
   EOD
 }
 
@@ -200,5 +210,66 @@ variable "state_bucket_options" {
   }
   description = <<-EOD
   Defines the parameters for the IaC GCS state bucket, if enabled in gcp_options.
+  EOD
+}
+
+variable "f5_ai_repo_credentials" {
+  type = object({
+    username = string
+    password = string
+  })
+  nullable = true
+  validation {
+    condition     = var.f5_ai_repo_credentials == null ? true : try(length(compact([var.f5_ai_repo_credentials.username, var.f5_ai_repo_credentials.password])), 0) == 2
+    error_message = "If not null, f5_ai_repo_credentials must have non-empty username and password fields."
+  }
+  default     = null
+  description = <<-EOD
+  An optional username and password pair for the upstream F5 AI container repository. If provided, a remote Artifact
+  Registry will be created to reference the upstream F5 AI private repository for transparent access to the
+  private images, along with a Secret Manager secret to contain the password.
+  EOD
+}
+
+variable "secrets" {
+  type     = map(string)
+  nullable = true
+  validation {
+    # Keys become secret names when combined with name variable as '{name}-{key}', with a maximum limit of 255 combined chars.
+    condition     = try(length(var.secrets), 0) == 0 ? true : alltrue([for k, v in var.secrets : can(regex("^[a-zA-Z0-9_-]{1,228}$", k))])
+    error_message = "Each secrets entry key must be alphanumeric, underscore, or hyphen, with a maximum length of 228."
+  }
+  default     = null
+  description = <<-EOD
+  An optional map of Secret names to values (strings-only) that will be created. A Secret Manager secret will be created
+  for each key in the map, and a GitHub actions variable of the form `{KEY_NAME}_SECRET` containing the Secret Manager
+  identity. The value must be a string; use `jsonencode` or similar to include structured or binary data.
+  NOTE: Values are allowed to be null/empty.
+  NOTE 2: The input variables `nginx_jwt` and `f5_ai_repo_credentials` are preferred for those secrets, as they will
+  trigger creation of Artifact Registries. Avoid using the same value in both places, but use `secrets` input if you
+  want to store either of those without triggering creation of supporting resources.
+  EOD
+}
+
+variable "virtual_repo" {
+  type = object({
+    enable     = optional(bool, false)
+    docker_hub = optional(bool, false)
+    ar_repos   = optional(set(string))
+  })
+  nullable = true
+  validation {
+    condition     = var.virtual_repo == null ? true : (var.virtual_repo.ar_repos == null ? true : alltrue([for repo in var.virtual_repo.ar_repos : can(regex("^[a-z]{2,}(?:-[a-z]+[1-9])?-docker.pkg.dev/[^/]+/[^/]+", repo))]))
+    error_message = "Each ar_repos entry must be a valid Artifact Registry repository."
+  }
+  default     = null
+  description = <<-EOD
+  If enabled, a virtual Artifact Registry will be created that will provide unified access to the bootstrapped OCI
+  registry, if created, the upstream NGINX and F5 AI private repositories, if credentials were provided, and other
+  existing Artifact Registries, if provided. If the `docker_hub` flag is set, the publicly accessible artifacts on
+  Docker Hub will be made available through the virtual OCI repository.
+  NOTE: By default, a virtual repository will not be created. To instantiate a virtual repo, the `enable` flag must be
+  `true` and at least one bootstrapped repo (see `gcp_options.ar.oci` variable), or NGINX, F5 AI, or other upstream OCI
+  repo must be present.
   EOD
 }

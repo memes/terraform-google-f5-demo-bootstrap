@@ -1,3 +1,20 @@
+# To support immutable subject claims in post-July 2026 repos we need to know the user id and organization id, if repo
+# was created under an org.
+data "github_user" "default" {
+  username = ""
+}
+
+data "github_organization" "default" {
+  for_each     = coalesce(try(var.github_options.org, null), "unspecified") == "unspecified" ? {} : { org = var.github_options.org }
+  name         = each.value
+  summary_only = true
+}
+
+locals {
+  immutable_user = format("%s@%s", data.github_user.default.login, data.github_user.default.id)
+  immutable_org  = one([for org in data.github_organization.default : format("%s@%s", org.login, org.id)])
+}
+
 # Bootstraps a new GitHub repository with the required settings for automation.
 resource "github_repository" "automation" {
   name               = coalesce(try(var.github_options.name, ""), var.name)
@@ -56,8 +73,8 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "attribute.infra_manager"    = try(var.gcp_options.enable_infra_manager, true) ? "'enabled'" : "'disabled'"
     "attribute.cloud_deploy"     = try(var.gcp_options.enable_cloud_deploy, true) ? "'enabled'" : "'disabled'"
   }
-  # Only allow integration with the bootstrapped repo
-  attribute_condition = format("attribute.repository_owner == '%s' && attribute.repository == '%s'", split("/", github_repository.automation.full_name)[0], github_repository.automation.full_name)
+  # Only allow integration with the bootstrapped repo using immutable subject matching
+  attribute_condition = format("assertion.sub.startsWith('repo:%s/%s@%s:')", (local.immutable_org != null ? local.immutable_org : local.immutable_user), github_repository.automation.name, github_repository.automation.repo_id)
   oidc {
     # TODO @memes - the effect of an empty list is to impose a match against the
     # fully-qualified workload identity pool name. This should be sufficient but
@@ -120,15 +137,69 @@ resource "github_actions_variable" "project_id" {
 }
 
 resource "github_actions_variable" "registry" {
-  for_each      = { for k, v in google_artifact_registry_repository.automation : format("%s_REGISTRY", upper(k)) => local.ar_repos[k].identifier }
+  for_each = merge(
+    { for k, v in google_artifact_registry_repository.automation : format("%s_REGISTRY", replace(upper(k), "/[^A-Z0-9_]/", "_")) => local.ar_repos[k].identifier },
+    { for k, v in google_artifact_registry_repository.upstream_oci_docker_hub : format("%s_REGISTRY", replace(upper(k), "/[^A-Z0-9_]/", "_")) => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
+    { for k, v in google_artifact_registry_repository.upstream_oci_nginx : format("%s_REGISTRY", replace(upper(k), "/[^A-Z0-9_]/", "_")) => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
+    { for k, v in google_artifact_registry_repository.upstream_oci_f5_ai : format("%s_REGISTRY", replace(upper(k), "/[^A-Z0-9_]/", "_")) => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
+    { for k, v in google_artifact_registry_repository.oci_virt : format("%s_REGISTRY", replace(upper(k), "/[^A-Z0-9_]/", "_")) => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
+  )
   repository    = github_repository.automation.name
   variable_name = each.key
   value         = each.value
 }
 
 resource "github_actions_variable" "nginx_jwt" {
-  for_each      = { for secret in module.nginx_jwt : "NGINX_JWT_SECRET" => secret.id }
+  for_each      = { for secret in google_secret_manager_secret.nginx_jwt : "NGINX_JWT_SECRET" => secret.id }
   repository    = github_repository.automation.name
   variable_name = each.key
   value         = each.value
+}
+
+resource "github_actions_repository_permissions" "automation" {
+  repository           = github_repository.automation.name
+  enabled              = true
+  sha_pinning_required = false
+  allowed_actions      = "selected"
+  allowed_actions_config {
+    github_owned_allowed = true
+    # These are the actions used in memes/terraform-google-f5-demo-bootstrap-template .github/workflow actions that are
+    # not authored by GitHub.
+    patterns_allowed = [
+      "GoogleCloudPlatform/release-please-action@*",
+      "google-github-actions/auth@*",
+      "google-github-actions/create-cloud-deploy-release@*",
+      "google-github-actions/setup-gcloud@*",
+      "hashicorp/setup-terraform@*",
+      "jaxxstorm/action-install-gh-release@*",
+      "opentofu/setup-opentofu@*",
+      "pre-commit/action@*",
+      "terraform-linters/setup-tflint@*",
+    ]
+  }
+
+  lifecycle {
+    ignore_changes = [
+      allowed_actions_config[0].patterns_allowed,
+    ]
+  }
+}
+
+resource "github_workflow_repository_permissions" "automation" {
+  repository                       = github_repository.automation.name
+  default_workflow_permissions     = "read"
+  can_approve_pull_request_reviews = true
+}
+
+resource "github_actions_variable" "secrets" {
+  for_each      = { for k, v in google_secret_manager_secret.secrets : format("%s_SECRET", replace(upper(k), "/[^A-Z0-9_]/", "_")) => v.id }
+  repository    = github_repository.automation.name
+  variable_name = each.key
+  value         = each.value
+}
+
+resource "github_actions_variable" "bootstrap_name" {
+  repository    = github_repository.automation.name
+  variable_name = "BOOTSTRAP_NAME"
+  value         = var.name
 }

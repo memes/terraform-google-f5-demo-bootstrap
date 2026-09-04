@@ -9,6 +9,9 @@ locals {
         description = format("OCI registry for %s", var.name)
         location    = try(var.gcp_options.ar.location, "us")
         identifier  = format("%s-docker.pkg.dev/%s/%s-oci", try(var.gcp_options.ar.location, "us"), var.project_id, var.name)
+        docker_config = {
+          immutable_tags = false
+        }
       }
     } : {},
     try(var.gcp_options.ar.deb, false) ? {
@@ -30,6 +33,18 @@ locals {
       }
     } : {},
   )
+  upstream_ars = try(var.virtual_repo.ar_repos, null) == null ? {} : { for name in var.virtual_repo.ar_repos : name => {
+    repo     = regex("^.*-docker\\.pkg\\.dev/[^/]+/([^/]+)", name)[0]
+    location = regex("^(.*)-docker", name)[0]
+    project  = regex("docker\\.pkg\\.dev/([^/]+)/", name)[0]
+  } }
+}
+
+data "google_artifact_registry_repository" "upstream_ar" {
+  for_each      = local.upstream_ars
+  repository_id = each.value.repo
+  location      = each.value.location
+  project       = each.value.project
 }
 
 # Create any needed artifact registry for the project
@@ -41,6 +56,13 @@ resource "google_artifact_registry_repository" "automation" {
   location      = try(var.gcp_options.ar.location, "us")
   description   = each.value.description
   labels        = var.labels
+
+  dynamic "docker_config" {
+    for_each = try(each.value.docker_config, {})
+    content {
+      immutable_tags = try(docker_config.value.immutable_tags, false)
+    }
+  }
 
   depends_on = [
     google_project_service.apis,
@@ -62,8 +84,8 @@ resource "google_artifact_registry_repository_iam_member" "iac" {
   ]
 }
 
-# Allow OIDC principals with attribute 'artifact_registry="writer"' read-only access to Artifact Registry
-resource "google_artifact_registry_repository_iam_member" "reader" {
+# Allow OIDC principals with attribute 'artifact_registry="reader"' read-only access to automation Artifact Registries
+resource "google_artifact_registry_repository_iam_member" "automation_reader" {
   for_each   = google_artifact_registry_repository.automation
   project    = each.value.project
   location   = each.value.location
@@ -77,8 +99,8 @@ resource "google_artifact_registry_repository_iam_member" "reader" {
   ]
 }
 
-# Allow OIDC principals with attribute 'artifact_registry="writer"' push access to Artifact Registry
-resource "google_artifact_registry_repository_iam_member" "writer" {
+# Allow OIDC principals with attribute 'artifact_registry="writer"' push access to automation Artifact Registries
+resource "google_artifact_registry_repository_iam_member" "automation_writer" {
   for_each   = google_artifact_registry_repository.automation
   project    = each.value.project
   location   = each.value.location
@@ -143,6 +165,234 @@ resource "google_service_account_iam_member" "ar" {
   depends_on = [
     google_project_service.apis,
     google_service_account.ar,
+    google_iam_workload_identity_pool.bots,
+  ]
+}
+
+# Add any upstream OCI repositories as remote Artifact Registries
+resource "google_artifact_registry_repository" "upstream_oci_nginx" {
+  for_each      = local.has_nginx_jwt_secret ? { oci-nginx = true } : {}
+  project       = var.project_id
+  repository_id = format("%s-%s", var.name, each.key)
+  format        = "DOCKER"
+  location      = try(var.gcp_options.ar.location, "us")
+  description   = format("Upstream NGINX private Docker repository for %s", var.name)
+  labels        = var.labels
+  mode          = "REMOTE_REPOSITORY"
+  remote_repository_config {
+    description                 = "F5 NGINX+ private Docker repository"
+    disable_upstream_validation = false
+    docker_repository {
+      custom_repository {
+        uri = "https://private-registry.nginx.com"
+      }
+    }
+    upstream_credentials {
+      username_password_credentials {
+        username                = var.nginx_jwt
+        password_secret_version = format("%s/versions/latest", one([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.id]))
+      }
+    }
+  }
+
+  depends_on = [
+    google_project_service.apis,
+    google_secret_manager_secret_iam_member.upstream_oci_password_nginx,
+  ]
+}
+
+# Create a remote repository for F5 AI containers and charts.
+resource "google_artifact_registry_repository" "upstream_oci_f5_ai" {
+  for_each      = local.has_f5_ai_repo_credentials_secret ? { "oci-f5-ai" = true } : {}
+  project       = var.project_id
+  repository_id = format("%s-%s", var.name, each.key)
+  format        = "DOCKER"
+  location      = try(var.gcp_options.ar.location, "us")
+  description   = format("Upstream F5 AI private Docker repository for %s", var.name)
+  labels        = var.labels
+  mode          = "REMOTE_REPOSITORY"
+  remote_repository_config {
+    description                 = "F5 AI private Harbor repository"
+    disable_upstream_validation = false
+    docker_repository {
+      custom_repository {
+        uri = "https://harbor.calypsoai.app"
+      }
+    }
+    upstream_credentials {
+      username_password_credentials {
+        username                = var.f5_ai_repo_credentials.username
+        password_secret_version = format("%s/versions/latest", one([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.id]))
+      }
+    }
+  }
+
+  depends_on = [
+    google_project_service.apis,
+    google_secret_manager_secret_iam_member.upstream_oci_password_f5_ai,
+  ]
+}
+
+# Create a remote repository for public docker hub artifacts.
+resource "google_artifact_registry_repository" "upstream_oci_docker_hub" {
+  for_each      = try(var.virtual_repo.docker_hub, false) ? { "oci-docker-hub" = true } : {}
+  project       = var.project_id
+  repository_id = format("%s-%s", var.name, each.key)
+  format        = "DOCKER"
+  location      = try(var.gcp_options.ar.location, "us")
+  description   = format("Upstream public Docker Hub repository for %s", var.name)
+  labels        = var.labels
+  mode          = "REMOTE_REPOSITORY"
+  remote_repository_config {
+    description                 = "Upstream public Docker Hub repository"
+    disable_upstream_validation = true
+    docker_repository {
+      public_repository = "DOCKER_HUB"
+    }
+  }
+
+  depends_on = [
+    google_project_service.apis,
+  ]
+}
+
+# Grant the service identity for Artifact Registry access to each local and upstream registry if a virtual registry will
+# be created.
+resource "google_artifact_registry_repository_iam_member" "identity_automation" {
+  for_each   = local.enable_virtual_oci_registry ? google_artifact_registry_repository.automation : {}
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.name
+  role       = "roles/artifactregistry.reader"
+  member     = google_project_service_identity.ids["artifactregistry.googleapis.com"].member
+
+  depends_on = [
+    google_project_service_identity.ids,
+    google_artifact_registry_repository.automation,
+  ]
+}
+
+resource "google_artifact_registry_repository_iam_member" "identity_upstream_oci_nginx" {
+  for_each   = local.enable_virtual_oci_registry ? google_artifact_registry_repository.upstream_oci_nginx : {}
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.name
+  role       = "roles/artifactregistry.reader"
+  member     = google_project_service_identity.ids["artifactregistry.googleapis.com"].member
+
+  depends_on = [
+    google_project_service_identity.ids,
+    google_artifact_registry_repository.upstream_oci_nginx,
+  ]
+}
+
+resource "google_artifact_registry_repository_iam_member" "identity_upstream_oci_f5_ai" {
+  for_each   = local.enable_virtual_oci_registry ? google_artifact_registry_repository.upstream_oci_f5_ai : {}
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.name
+  role       = "roles/artifactregistry.reader"
+  member     = google_project_service_identity.ids["artifactregistry.googleapis.com"].member
+
+  depends_on = [
+    google_project_service_identity.ids,
+    google_artifact_registry_repository.upstream_oci_f5_ai,
+  ]
+}
+
+resource "google_artifact_registry_repository_iam_member" "identity_upstream_oci_docker_hub" {
+  for_each   = local.enable_virtual_oci_registry ? google_artifact_registry_repository.upstream_oci_docker_hub : {}
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.name
+  role       = "roles/artifactregistry.reader"
+  member     = google_project_service_identity.ids["artifactregistry.googleapis.com"].member
+
+  depends_on = [
+    google_project_service_identity.ids,
+    google_artifact_registry_repository.upstream_oci_docker_hub,
+  ]
+}
+
+resource "google_artifact_registry_repository_iam_member" "identity_upstream_ar" {
+  for_each   = local.enable_virtual_oci_registry ? data.google_artifact_registry_repository.upstream_ar : {}
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.name
+  role       = "roles/artifactregistry.reader"
+  member     = google_project_service_identity.ids["artifactregistry.googleapis.com"].member
+
+  depends_on = [
+    google_project_service_identity.ids,
+  ]
+}
+
+# Create a virtual OCI repository, if requested. The project local, and any remote registries will be added to give a
+# single image repository.
+resource "google_artifact_registry_repository" "oci_virt" {
+  for_each      = local.enable_virtual_oci_registry ? { oci-virt = true } : {}
+  project       = var.project_id
+  repository_id = format("%s-%s", var.name, each.key)
+  format        = "DOCKER"
+  location      = try(var.gcp_options.ar.location, "us")
+  description   = format("Virtual Docker repository for %s", var.name)
+  labels        = var.labels
+  mode          = "VIRTUAL_REPOSITORY"
+  virtual_repository_config {
+    dynamic "upstream_policies" {
+      for_each = { for k, v in google_artifact_registry_repository.automation : k => v if k == "oci" }
+      content {
+        id         = upstream_policies.value.repository_id
+        repository = upstream_policies.value.id
+        priority   = 1000
+      }
+    }
+    dynamic "upstream_policies" {
+      for_each = google_artifact_registry_repository.upstream_oci_docker_hub
+      content {
+        id         = upstream_policies.value.repository_id
+        repository = upstream_policies.value.id
+        priority   = 100
+      }
+    }
+    dynamic "upstream_policies" {
+      for_each = google_artifact_registry_repository.upstream_oci_nginx
+      content {
+        id         = upstream_policies.value.repository_id
+        repository = upstream_policies.value.id
+        priority   = 800
+      }
+    }
+    dynamic "upstream_policies" {
+      for_each = google_artifact_registry_repository.upstream_oci_f5_ai
+      content {
+        id         = upstream_policies.value.repository_id
+        repository = upstream_policies.value.id
+        priority   = 700
+      }
+    }
+    dynamic "upstream_policies" {
+      for_each = data.google_artifact_registry_repository.upstream_ar
+      content {
+        id         = upstream_policies.value.repository_id
+        repository = upstream_policies.value.id
+        priority   = 500
+      }
+    }
+  }
+}
+
+# Allow OIDC principals with attribute 'artifact_registry="reader"' read-only access to virtual Artifact Registries
+resource "google_artifact_registry_repository_iam_member" "virtual_reader" {
+  for_each   = google_artifact_registry_repository.oci_virt
+  project    = each.value.project
+  location   = each.value.location
+  repository = each.value.name
+  role       = "roles/artifactregistry.reader"
+  member     = format("principalSet://iam.googleapis.com/%s/attribute.artifact_registry/reader", google_iam_workload_identity_pool.bots.name)
+
+  depends_on = [
+    google_project_service.apis,
     google_iam_workload_identity_pool.bots,
   ]
 }

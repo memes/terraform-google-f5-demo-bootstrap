@@ -1,7 +1,7 @@
 #
 
-![GitHub release](https://img.shields.io/github/v/release/memes/terraform-google-f5-demo-bootstrap?sort=semver)
-![GitHub last commit](https://img.shields.io/github/last-commit/memes/terraform-google-f5-demo-bootstrap)
+![GitHub release](https://img.shields.io/github/v/release/f5-architects/terraform-google-f5-demo-bootstrap?sort=semver)
+![GitHub last commit](https://img.shields.io/github/last-commit/f5-architects/terraform-google-f5-demo-bootstrap)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 This Terraform module creates an opinionated automation for an F5 on GCP demo.

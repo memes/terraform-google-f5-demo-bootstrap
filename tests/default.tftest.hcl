@@ -188,7 +188,7 @@ run "main" {
   }
   assert {
     condition = alltrue([for k, v in google_service_account_iam_member.deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy SA impersonation roles to bind to workload identities
         "roles/iam.workloadIdentityUser",
@@ -204,7 +204,7 @@ run "main" {
   }
   assert {
     condition = alltrue([for k, v in google_project_iam_member.cloud_deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy releaser roles
         "roles/clouddeploy.releaser",
@@ -452,7 +452,7 @@ run "github" {
   }
   assert {
     condition = alltrue([for template in github_repository.automation.template :
-      template.owner == "memes" &&
+      template.owner == "f5-architects" &&
       template.repository == "terraform-google-f5-demo-bootstrap-template" &&
       !template.include_all_branches
     ])

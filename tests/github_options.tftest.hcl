@@ -71,7 +71,7 @@ run "null" {
   }
   assert {
     condition = alltrue([for template in github_repository.automation.template :
-      template.owner == "memes" &&
+      template.owner == "f5-architects" &&
       template.repository == "terraform-google-f5-demo-bootstrap-template" &&
       !template.include_all_branches
     ])
@@ -213,7 +213,7 @@ run "empty" {
   }
   assert {
     condition = alltrue([for template in github_repository.automation.template :
-      template.owner == "memes" &&
+      template.owner == "f5-architects" &&
       template.repository == "terraform-google-f5-demo-bootstrap-template" &&
       !template.include_all_branches
     ])
@@ -356,7 +356,7 @@ run "private" {
   }
   assert {
     condition = alltrue([for template in github_repository.automation.template :
-      template.owner == "memes" &&
+      template.owner == "f5-architects" &&
       template.repository == "terraform-google-f5-demo-bootstrap-template" &&
       !template.include_all_branches
     ])
@@ -499,7 +499,7 @@ run "name" {
   }
   assert {
     condition = alltrue([for template in github_repository.automation.template :
-      template.owner == "memes" &&
+      template.owner == "f5-architects" &&
       template.repository == "terraform-google-f5-demo-bootstrap-template" &&
       !template.include_all_branches
     ])
@@ -642,7 +642,7 @@ run "description" {
   }
   assert {
     condition = alltrue([for template in github_repository.automation.template :
-      template.owner == "memes" &&
+      template.owner == "f5-architects" &&
       template.repository == "terraform-google-f5-demo-bootstrap-template" &&
       !template.include_all_branches
     ])
@@ -785,7 +785,7 @@ run "empty_template" {
   }
   assert {
     condition = alltrue([for template in github_repository.automation.template :
-      template.owner == "memes" &&
+      template.owner == "f5-architects" &&
       template.repository == "terraform-google-f5-demo-bootstrap-template" &&
       !template.include_all_branches
     ])
@@ -1071,7 +1071,7 @@ run "empty_collaborators" {
   }
   assert {
     condition = alltrue([for template in github_repository.automation.template :
-      template.owner == "memes" &&
+      template.owner == "f5-architects" &&
       template.repository == "terraform-google-f5-demo-bootstrap-template" &&
       !template.include_all_branches
     ])
@@ -1217,7 +1217,7 @@ run "collaborators" {
   }
   assert {
     condition = alltrue([for template in github_repository.automation.template :
-      template.owner == "memes" &&
+      template.owner == "f5-architects" &&
       template.repository == "terraform-google-f5-demo-bootstrap-template" &&
       !template.include_all_branches
     ])
@@ -1362,7 +1362,7 @@ run "ssh_deploy_key" {
   }
   assert {
     condition = alltrue([for template in github_repository.automation.template :
-      template.owner == "memes" &&
+      template.owner == "f5-architects" &&
       template.repository == "terraform-google-f5-demo-bootstrap-template" &&
       !template.include_all_branches
     ])
@@ -1505,7 +1505,7 @@ run "empty_org" {
   }
   assert {
     condition = alltrue([for template in github_repository.automation.template :
-      template.owner == "memes" &&
+      template.owner == "f5-architects" &&
       template.repository == "terraform-google-f5-demo-bootstrap-template" &&
       !template.include_all_branches
     ])
@@ -1655,7 +1655,7 @@ run "org" {
   }
   assert {
     condition = alltrue([for template in github_repository.automation.template :
-      template.owner == "memes" &&
+      template.owner == "f5-architects" &&
       template.repository == "terraform-google-f5-demo-bootstrap-template" &&
       !template.include_all_branches
     ])

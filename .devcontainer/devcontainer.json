@@ -1,5 +1,5 @@
 {
-    "name": "memes-terraform-google-f5-demo-bootstrap",
+    "name": "f5-architects-terraform-google-f5-demo-bootstrap",
     "dockerFile": "Dockerfile",
     "features": {
         "ghcr.io/devcontainers/features/docker-in-docker:4": {
@@ -26,11 +26,11 @@
         }
     },
     "onCreateCommand": {
-        "install-pre-commit": "sudo sh -c 'apt update && apt install -y --no-install-recommends fzf pipx && rm -rf /var/lib/apt/lists/*' && pipx install pre-commit",
+        "install-pre-commit": "sudo sh -c 'apt update && apt install -y --no-install-recommends fzf pipx && rm -rf /var/lib/apt/lists/*'",
         "modify-default-omz-plugins": ["/usr/bin/sed", "-i.onCreateCommand" , "-e", "/^plugins=/c\\plugins=(git dotenv)", "/home/vscode/.zshrc"]
     },
-    "postCreateCommand": {
-        "pre-commit-hook": "pre-commit install --hook-type commit-msg --hook-type pre-commit"
+    "updateContentCommand": {
+        "pre-commit-hook": "pipx install pre-commit && pre-commit install --hook-type commit-msg --hook-type pre-commit"
     },
     "containerUser": "vscode",
     "updateRemoteUserUID": true,

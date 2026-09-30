@@ -15,6 +15,11 @@
       "resolved": "ghcr.io/devcontainers-extra/features/terraform-docs@sha256:06dd6e80f0608d3715d40b60d409c4bbcbcd08c8ac1b6b0cc36860e07c08972c",
       "integrity": "sha256:06dd6e80f0608d3715d40b60d409c4bbcbcd08c8ac1b6b0cc36860e07c08972c"
     },
+    "ghcr.io/devcontainers/features/docker-in-docker:4": {
+      "version": "4.0.0",
+      "resolved": "ghcr.io/devcontainers/features/docker-in-docker@sha256:4fa87399214366e320d489991769c4f3f461e1ffe461f54eea78a41b34945bb5",
+      "integrity": "sha256:4fa87399214366e320d489991769c4f3f461e1ffe461f54eea78a41b34945bb5"
+    },
     "ghcr.io/memes/devcontainers-features/google-cloud-cli:1": {
       "version": "1.1.1",
       "resolved": "ghcr.io/memes/devcontainers-features/google-cloud-cli@sha256:7869b755bb656bfa43c8d887d3bc4931b3bfed36c5fe6d79afe41a96893534d8",

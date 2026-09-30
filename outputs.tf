@@ -6,18 +6,52 @@ output "state_bucket" {
 }
 
 output "registries" {
-  value = { for k, v in google_artifact_registry_repository.automation : k => {
-    project  = v.project
-    location = v.location
-    name     = v.name
-  } }
+  value = merge(
+    { for k, v in google_artifact_registry_repository.automation : k => {
+      project  = v.project
+      location = v.location
+      name     = v.name
+      }
+    },
+    { for k, v in google_artifact_registry_repository.upstream_oci_nginx : k => {
+      project  = v.project
+      location = v.location
+      name     = v.name
+      }
+    },
+    { for k, v in google_artifact_registry_repository.upstream_oci_f5_ai : k => {
+      project  = v.project
+      location = v.location
+      name     = v.name
+      }
+    },
+    { for k, v in google_artifact_registry_repository.upstream_oci_docker_hub : k => {
+      project  = v.project
+      location = v.location
+      name     = v.name
+      }
+    },
+    {
+      for k, v in google_artifact_registry_repository.oci_virt : k => {
+        project  = v.project
+        location = v.location
+        name     = v.name
+      }
+    },
+  )
   description = <<-EOD
   A map of Artifact Registry resources created by the module.
   EOD
 }
 
 output "repo_identifiers" {
-  value       = { for k, v in google_artifact_registry_repository.automation : k => local.ar_repos[k].identifier }
+  value = merge(
+    { for k, v in google_artifact_registry_repository.automation : k => local.ar_repos[k].identifier },
+    { for k, v in google_artifact_registry_repository.upstream_oci_nginx : k => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
+    { for k, v in google_artifact_registry_repository.upstream_oci_f5_ai : k => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
+    { for k, v in google_artifact_registry_repository.upstream_oci_docker_hub : k => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
+    { for k, v in google_artifact_registry_repository.oci_virt : k => format("%s-docker.pkg.dev/%s/%s", v.location, v.project, v.repository_id) },
+  )
   description = <<-EOD
   A map of Artifact Registry resource types to canonical access identifiers.
   EOD
@@ -104,12 +138,28 @@ output "deploy_sa" {
 
 output "nginx_jwt" {
   value = {
-    secret_id            = one([for k, v in module.nginx_jwt : v.secret_id])
-    id                   = one([for k, v in module.nginx_jwt : v.id])
-    expiration_timestamp = one([for k, v in module.nginx_jwt : v.expiration_timestamp])
+    secret_id = one([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id])
+    id        = one([for k, v in google_secret_manager_secret.nginx_jwt : v.id])
   }
   description = <<-EOD
-  If an NGINX JWT secret was created during bootstrap, return the fully-qualified and local identifiers, and expiration
-  timestamp, if appropriate.
+  If an NGINX JWT secret was created during bootstrap, return the fully-qualified and local identifiers, if appropriate.
+  EOD
+}
+
+output "secrets" {
+  value = { for k, v in google_secret_manager_secret.secrets : k => {
+    id        = v.id
+    secret_id = v.secret_id
+    }
+  }
+  description = <<-EOD
+  If an F5 AI license secret was created during bootstrap, return the fully-qualified and local identifiers, if appropriate.
+  EOD
+}
+
+output "bootstrap_name" {
+  value       = var.name
+  description = <<-EOD
+  The name used when bootstrapping resources.
   EOD
 }

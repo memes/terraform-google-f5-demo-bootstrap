@@ -6,3 +6,9 @@ config:
 gitignore: true
 ignores:
   - CHANGELOG.md
+overrides:
+  - filter:
+      - README.md
+    config:
+      no-bare-urls: false
+    combine: "merge"

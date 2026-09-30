@@ -2,6 +2,9 @@
     "name": "memes-terraform-google-f5-demo-bootstrap",
     "dockerFile": "Dockerfile",
     "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:4": {
+            "moby": false
+        },
         "ghcr.io/devcontainers-extra/features/direnv:1": {},
         "ghcr.io/devcontainers-extra/features/opentofu:1": {},
         "ghcr.io/devcontainers-extra/features/terraform-docs:1": {},
@@ -32,6 +35,6 @@
     "containerUser": "vscode",
     "updateRemoteUserUID": true,
     "mounts": [
-        "source=${localEnv:HOME}/.config/gcloud,target=/home/vscode/.config/gcloud,type=bind"
+        "source=${localEnv:HOME}/.config/gcloud,target=/home/vscode/.config/gcloud,type=bind,consistency=cached"
     ]
 }

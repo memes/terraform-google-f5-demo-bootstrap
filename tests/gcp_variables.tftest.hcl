@@ -14,8 +14,15 @@ mock_provider "google" {
       member = "serviceAccount:test-sa@mock-project-id.iam.gserviceaccount.com"
     }
   }
+
 }
-mock_provider "google-beta" {}
+mock_provider "google-beta" {
+  mock_resource "google_project_service_identity" {
+    defaults = {
+      member = "serviceAccount:mock-service-12345@mock-project.iam.gserviceaccount.com"
+    }
+  }
+}
 mock_provider "github" {
   mock_resource "github_repository" {
     defaults = {
@@ -59,12 +66,13 @@ run "gcp_options_null" {
 
   # Google service identities required by bootstrap
   assert {
-    condition     = try(length(google_project_service_identity.ids), 0) == 2
-    error_message = "Expected project to have enabled 2 service identities."
+    condition     = try(length(google_project_service_identity.ids), 0) == 3
+    error_message = "Expected project to have enabled 3 service identities."
   }
   assert {
     condition = alltrue([for api in [
       # Expected APIs with required service identities
+      "artifactregistry.googleapis.com",
       "cloudbuild.googleapis.com",
       "clouddeploy.googleapis.com",
     ] : google_project_service_identity.ids[api] != null])
@@ -292,6 +300,22 @@ run "gcp_options_null" {
     condition     = google_artifact_registry_repository.automation["oci"].repository_id == "var-gcp-variables-test-oci" && google_artifact_registry_repository.automation["oci"].format == "DOCKER" && google_artifact_registry_repository.automation["oci"].location == "us"
     error_message = "Expected OCI AR repo properties to match expectations."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
+    error_message = "Expected no upstream repo for NGINX private repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
+    error_message = "Expected no upstream repo for F5 AI private repo"
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_docker_hub), 0) == 0
+    error_message = "Expected no upstream repo for public Docker Hub repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.oci_virt), 0) == 0
+    error_message = "Expected no virtual Docker repositories."
+  }
 
   # Repo IAM bindings
   assert {
@@ -306,32 +330,32 @@ run "gcp_options_null" {
     error_message = "Expected IaC SA to have expected AR repo roles."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.reader), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR readers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_reader), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR readers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.reader : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_reader : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
       ) && contains([
         # Expected AR roles for readers
         "roles/artifactregistry.reader",
       ], v.role)
     ])
-    error_message = "Expected AR reader role bindings to workload identities matching pattern."
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on automation repos."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.writer), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR writers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_writer), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR writers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.writer : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_writer : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/writer$", v.member)
       ) && contains([
         # Expected AR roles for writers
         "roles/artifactregistry.writer",
       ], v.role)
     ])
-    error_message = "Expected AR writer role bindings to workload identities matching pattern."
+    error_message = "Expected AR writer role bindings to workload identities matching pattern on automation repos."
   }
   assert {
     condition     = try(length(google_service_account.ar), 0) == 1
@@ -362,6 +386,20 @@ run "gcp_options_null" {
     ])
     error_message = "Expected AR SA act as role bindings to workload identities matching pattern."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository_iam_member.virtual_reader), 0) == 0
+    error_message = "Expected no IAM bindings for Workload Identity AR readers on virtual repos."
+  }
+  assert {
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.virtual_reader : can(
+      regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
+      ) && contains([
+        # Expected AR roles for readers
+        "roles/artifactregistry.reader",
+      ], v.role)
+    ])
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on virtual repos."
+  }
 
   # GitHub integration with workload identity provider
   assert {
@@ -388,7 +426,7 @@ run "gcp_options_null" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -402,7 +440,7 @@ run "gcp_options_null" {
   }
   assert {
     condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    error_message = "Expected registries output to have one entry."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -443,6 +481,32 @@ run "gcp_options_null" {
   assert {
     condition     = try(length(output.deploy_sa), 0) > 0
     error_message = "Expected deploy_sa output to be not null or empty."
+  }
+
+  # Secret Manager secrets
+  assert {
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
+    error_message = "Expected no NGINX JWT secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
+    error_message = "Expected no upstream NGINX Docker secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
+    error_message = "Expected no upstream F5 AI harbor secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
   }
 }
 
@@ -476,12 +540,13 @@ run "gcp_options_empty" {
 
   # Google service identities required by bootstrap
   assert {
-    condition     = try(length(google_project_service_identity.ids), 0) == 2
-    error_message = "Expected project to have enabled 2 service identities."
+    condition     = try(length(google_project_service_identity.ids), 0) == 3
+    error_message = "Expected project to have enabled 3 service identities."
   }
   assert {
     condition = alltrue([for api in [
       # Expected APIs with required service identities
+      "artifactregistry.googleapis.com",
       "cloudbuild.googleapis.com",
       "clouddeploy.googleapis.com",
     ] : google_project_service_identity.ids[api] != null])
@@ -709,6 +774,22 @@ run "gcp_options_empty" {
     condition     = google_artifact_registry_repository.automation["oci"].repository_id == "var-gcp-variables-test-oci" && google_artifact_registry_repository.automation["oci"].format == "DOCKER" && google_artifact_registry_repository.automation["oci"].location == "us"
     error_message = "Expected OCI AR repo properties to match expectations."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
+    error_message = "Expected no upstream repo for NGINX private repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
+    error_message = "Expected no upstream repo for F5 AI private repo"
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_docker_hub), 0) == 0
+    error_message = "Expected no upstream repo for public Docker Hub repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.oci_virt), 0) == 0
+    error_message = "Expected no virtual Docker repositories."
+  }
 
   # Repo IAM bindings
   assert {
@@ -723,32 +804,32 @@ run "gcp_options_empty" {
     error_message = "Expected IaC SA to have expected AR repo roles."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.reader), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR readers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_reader), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR readers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.reader : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_reader : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
       ) && contains([
         # Expected AR roles for readers
         "roles/artifactregistry.reader",
       ], v.role)
     ])
-    error_message = "Expected AR reader role bindings to workload identities matching pattern."
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on automation repos."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.writer), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR writers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_writer), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR writers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.writer : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_writer : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/writer$", v.member)
       ) && contains([
         # Expected AR roles for writers
         "roles/artifactregistry.writer",
       ], v.role)
     ])
-    error_message = "Expected AR writer role bindings to workload identities matching pattern."
+    error_message = "Expected AR writer role bindings to workload identities matching pattern on automation repos."
   }
   assert {
     condition     = try(length(google_service_account.ar), 0) == 1
@@ -779,6 +860,20 @@ run "gcp_options_empty" {
     ])
     error_message = "Expected AR SA act as role bindings to workload identities matching pattern."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository_iam_member.virtual_reader), 0) == 0
+    error_message = "Expected no IAM bindings for Workload Identity AR readers on virtual repos."
+  }
+  assert {
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.virtual_reader : can(
+      regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
+      ) && contains([
+        # Expected AR roles for readers
+        "roles/artifactregistry.reader",
+      ], v.role)
+    ])
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on virtual repos."
+  }
 
   # GitHub integration with workload identity provider
   assert {
@@ -805,7 +900,7 @@ run "gcp_options_empty" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -819,7 +914,7 @@ run "gcp_options_empty" {
   }
   assert {
     condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    error_message = "Expected registries output to one entry."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -861,6 +956,40 @@ run "gcp_options_empty" {
     condition     = try(length(output.deploy_sa), 0) > 0
     error_message = "Expected deploy_sa output to be not null or empty."
   }
+
+  # Secret Manager secrets
+  assert {
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
+    error_message = "Expected no NGINX JWT secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
+    error_message = "Expected no upstream NGINX Docker secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
+    error_message = "Expected no upstream F5 AI harbor secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.secrets), 0) == 0
+    error_message = "Expected no additional secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.secrets : startswith(v.secret_id, "var-gcp-variables-test-")])
+    error_message = "Expected additional secret names to start with 'var-gcp-variables-test-'."
+  }
 }
 
 run "gcp_options_disable_infra_manager" {
@@ -893,12 +1022,13 @@ run "gcp_options_disable_infra_manager" {
 
   # Google service identities required by bootstrap
   assert {
-    condition     = try(length(google_project_service_identity.ids), 0) == 2
-    error_message = "Expected project to have enabled 2 service identities."
+    condition     = try(length(google_project_service_identity.ids), 0) == 3
+    error_message = "Expected project to have enabled 3 service identities."
   }
   assert {
     condition = alltrue([for api in [
       # Expected APIs with required service identities
+      "artifactregistry.googleapis.com",
       "cloudbuild.googleapis.com",
       "clouddeploy.googleapis.com",
     ] : google_project_service_identity.ids[api] != null])
@@ -1125,6 +1255,22 @@ run "gcp_options_disable_infra_manager" {
     condition     = google_artifact_registry_repository.automation["oci"].repository_id == "var-gcp-variables-test-oci" && google_artifact_registry_repository.automation["oci"].format == "DOCKER" && google_artifact_registry_repository.automation["oci"].location == "us"
     error_message = "Expected OCI AR repo properties to match expectations."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
+    error_message = "Expected no upstream repo for NGINX private repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
+    error_message = "Expected no upstream repo for F5 AI private repo"
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_docker_hub), 0) == 0
+    error_message = "Expected no upstream repo for public Docker Hub repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.oci_virt), 0) == 0
+    error_message = "Expected no virtual Docker repositories."
+  }
 
   # Repo IAM bindings
   assert {
@@ -1139,32 +1285,32 @@ run "gcp_options_disable_infra_manager" {
     error_message = "Expected IaC SA to have expected AR repo roles."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.reader), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR readers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_reader), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR readers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.reader : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_reader : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
       ) && contains([
         # Expected AR roles for readers
         "roles/artifactregistry.reader",
       ], v.role)
     ])
-    error_message = "Expected AR reader role bindings to workload identities matching pattern."
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on automation repos."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.writer), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR writers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_writer), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR writers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.writer : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_writer : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/writer$", v.member)
       ) && contains([
         # Expected AR roles for writers
         "roles/artifactregistry.writer",
       ], v.role)
     ])
-    error_message = "Expected AR writer role bindings to workload identities matching pattern."
+    error_message = "Expected AR writer role bindings to workload identities matching pattern on automation repos."
   }
   assert {
     condition     = try(length(google_service_account.ar), 0) == 1
@@ -1195,6 +1341,20 @@ run "gcp_options_disable_infra_manager" {
     ])
     error_message = "Expected AR SA act as role bindings to workload identities matching pattern."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository_iam_member.virtual_reader), 0) == 0
+    error_message = "Expected no IAM bindings for Workload Identity AR readers on virtual repos."
+  }
+  assert {
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.virtual_reader : can(
+      regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
+      ) && contains([
+        # Expected AR roles for readers
+        "roles/artifactregistry.reader",
+      ], v.role)
+    ])
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on virtual repos."
+  }
 
   # GitHub integration with workload identity provider
   assert {
@@ -1221,7 +1381,7 @@ run "gcp_options_disable_infra_manager" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -1235,7 +1395,7 @@ run "gcp_options_disable_infra_manager" {
   }
   assert {
     condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    error_message = "Expected registries output to have one entry."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -1277,7 +1437,42 @@ run "gcp_options_disable_infra_manager" {
     condition     = try(length(output.deploy_sa), 0) > 0
     error_message = "Expected deploy_sa output to be not null or empty."
   }
+
+  # Secret Manager secrets
+  assert {
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
+    error_message = "Expected no NGINX JWT secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
+    error_message = "Expected no upstream NGINX Docker secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
+    error_message = "Expected no upstream F5 AI harbor secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.secrets), 0) == 0
+    error_message = "Expected no additional secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.secrets : startswith(v.secret_id, "var-gcp-variables-test-")])
+    error_message = "Expected additional secret names to start with 'var-gcp-variables-test-'."
+  }
 }
+
 run "gcp_options_disable_cloud_deploy" {
   variables {
     gcp_options = {
@@ -1307,12 +1502,13 @@ run "gcp_options_disable_cloud_deploy" {
 
   # Google service identities required by bootstrap
   assert {
-    condition     = try(length(google_project_service_identity.ids), 0) == 0
-    error_message = "Expected project to have enabled 0 service identities."
+    condition     = try(length(google_project_service_identity.ids), 0) == 1
+    error_message = "Expected project to have enabled 1 service identity."
   }
   assert {
     condition = alltrue([for api in [
       # Expected APIs with required service identities
+      "artifactregistry.googleapis.com",
     ] : google_project_service_identity.ids[api] != null])
     error_message = "Expected project to have enabled service identity for expected APIs."
   }
@@ -1532,6 +1728,22 @@ run "gcp_options_disable_cloud_deploy" {
     condition     = google_artifact_registry_repository.automation["oci"].repository_id == "var-gcp-variables-test-oci" && google_artifact_registry_repository.automation["oci"].format == "DOCKER" && google_artifact_registry_repository.automation["oci"].location == "us"
     error_message = "Expected OCI AR repo properties to match expectations."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
+    error_message = "Expected no upstream repo for NGINX private repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
+    error_message = "Expected no upstream repo for F5 AI private repo"
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_docker_hub), 0) == 0
+    error_message = "Expected no upstream repo for public Docker Hub repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.oci_virt), 0) == 0
+    error_message = "Expected no virtual Docker repositories."
+  }
 
   # Repo IAM bindings
   assert {
@@ -1546,32 +1758,32 @@ run "gcp_options_disable_cloud_deploy" {
     error_message = "Expected IaC SA to have expected AR repo roles."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.reader), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR readers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_reader), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR readers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.reader : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_reader : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
       ) && contains([
         # Expected AR roles for readers
         "roles/artifactregistry.reader",
       ], v.role)
     ])
-    error_message = "Expected AR reader role bindings to workload identities matching pattern."
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on automation repos."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.writer), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR writers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_writer), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR writers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.writer : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_writer : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/writer$", v.member)
       ) && contains([
         # Expected AR roles for writers
         "roles/artifactregistry.writer",
       ], v.role)
     ])
-    error_message = "Expected AR writer role bindings to workload identities matching pattern."
+    error_message = "Expected AR writer role bindings to workload identities matching pattern on automation repos."
   }
   assert {
     condition     = try(length(google_service_account.ar), 0) == 1
@@ -1602,6 +1814,20 @@ run "gcp_options_disable_cloud_deploy" {
     ])
     error_message = "Expected AR SA act as role bindings to workload identities matching pattern."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository_iam_member.virtual_reader), 0) == 0
+    error_message = "Expected no IAM bindings for Workload Identity AR readers on virtual repos."
+  }
+  assert {
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.virtual_reader : can(
+      regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
+      ) && contains([
+        # Expected AR roles for readers
+        "roles/artifactregistry.reader",
+      ], v.role)
+    ])
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on virtual repos."
+  }
 
   # GitHub integration with workload identity provider
   assert {
@@ -1628,7 +1854,7 @@ run "gcp_options_disable_cloud_deploy" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -1642,7 +1868,7 @@ run "gcp_options_disable_cloud_deploy" {
   }
   assert {
     condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    error_message = "Expected registries output to have one entry."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -1684,6 +1910,40 @@ run "gcp_options_disable_cloud_deploy" {
     condition     = try(length(output.deploy_sa), 0) == 0
     error_message = "Expected deploy_sa output to be null or empty."
   }
+
+  # Secret Manager secrets
+  assert {
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
+    error_message = "Expected no NGINX JWT secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
+    error_message = "Expected no upstream NGINX Docker secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
+    error_message = "Expected no upstream F5 AI harbor secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.secrets), 0) == 0
+    error_message = "Expected no additional secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.secrets : startswith(v.secret_id, "var-gcp-variables-test-")])
+    error_message = "Expected additional secret names to start with 'var-gcp-variables-test-'."
+  }
 }
 
 run "gcp_options_services_disable_on_destroy" {
@@ -1717,12 +1977,13 @@ run "gcp_options_services_disable_on_destroy" {
 
   # Google service identities required by bootstrap
   assert {
-    condition     = try(length(google_project_service_identity.ids), 0) == 2
-    error_message = "Expected project to have enabled 2 service identities."
+    condition     = try(length(google_project_service_identity.ids), 0) == 3
+    error_message = "Expected project to have enabled 3 service identities."
   }
   assert {
     condition = alltrue([for api in [
       # Expected APIs with required service identities
+      "artifactregistry.googleapis.com",
       "cloudbuild.googleapis.com",
       "clouddeploy.googleapis.com",
     ] : google_project_service_identity.ids[api] != null])
@@ -1950,6 +2211,22 @@ run "gcp_options_services_disable_on_destroy" {
     condition     = google_artifact_registry_repository.automation["oci"].repository_id == "var-gcp-variables-test-oci" && google_artifact_registry_repository.automation["oci"].format == "DOCKER" && google_artifact_registry_repository.automation["oci"].location == "us"
     error_message = "Expected OCI AR repo properties to match expectations."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
+    error_message = "Expected no upstream repo for NGINX private repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
+    error_message = "Expected no upstream repo for F5 AI private repo"
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_docker_hub), 0) == 0
+    error_message = "Expected no upstream repo for public Docker Hub repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.oci_virt), 0) == 0
+    error_message = "Expected no virtual Docker repositories."
+  }
 
   # Repo IAM bindings
   assert {
@@ -1964,32 +2241,32 @@ run "gcp_options_services_disable_on_destroy" {
     error_message = "Expected IaC SA to have expected AR repo roles."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.reader), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR readers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_reader), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR readers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.reader : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_reader : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
       ) && contains([
         # Expected AR roles for readers
         "roles/artifactregistry.reader",
       ], v.role)
     ])
-    error_message = "Expected AR reader role bindings to workload identities matching pattern."
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on automation repos."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.writer), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR writers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_writer), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR writers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.writer : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_writer : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/writer$", v.member)
       ) && contains([
         # Expected AR roles for writers
         "roles/artifactregistry.writer",
       ], v.role)
     ])
-    error_message = "Expected AR writer role bindings to workload identities matching pattern."
+    error_message = "Expected AR writer role bindings to workload identities matching pattern on automation repos."
   }
   assert {
     condition     = try(length(google_service_account.ar), 0) == 1
@@ -2020,6 +2297,20 @@ run "gcp_options_services_disable_on_destroy" {
     ])
     error_message = "Expected AR SA act as role bindings to workload identities matching pattern."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository_iam_member.virtual_reader), 0) == 0
+    error_message = "Expected no IAM bindings for Workload Identity AR readers on virtual repos."
+  }
+  assert {
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.virtual_reader : can(
+      regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
+      ) && contains([
+        # Expected AR roles for readers
+        "roles/artifactregistry.reader",
+      ], v.role)
+    ])
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on virtual repos."
+  }
 
   # GitHub integration with workload identity provider
   assert {
@@ -2046,7 +2337,7 @@ run "gcp_options_services_disable_on_destroy" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -2060,7 +2351,7 @@ run "gcp_options_services_disable_on_destroy" {
   }
   assert {
     condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    error_message = "Expected registries output to have one entry."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -2101,6 +2392,40 @@ run "gcp_options_services_disable_on_destroy" {
   assert {
     condition     = try(length(output.deploy_sa), 0) > 0
     error_message = "Expected deploy_sa output to be not null or empty."
+  }
+
+  # Secret Manager secrets
+  assert {
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
+    error_message = "Expected no NGINX JWT secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
+    error_message = "Expected no upstream NGINX Docker secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
+    error_message = "Expected no upstream F5 AI harbor secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.secrets), 0) == 0
+    error_message = "Expected no additional secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.secrets : startswith(v.secret_id, "var-gcp-variables-test-")])
+    error_message = "Expected additional secret names to start with 'var-gcp-variables-test-'."
   }
 }
 
@@ -2135,12 +2460,13 @@ run "gcp_options_disable_dependent_services" {
 
   # Google service identities required by bootstrap
   assert {
-    condition     = try(length(google_project_service_identity.ids), 0) == 2
-    error_message = "Expected project to have enabled 2 service identities."
+    condition     = try(length(google_project_service_identity.ids), 0) == 3
+    error_message = "Expected project to have enabled 3 service identities."
   }
   assert {
     condition = alltrue([for api in [
       # Expected APIs with required service identities
+      "artifactregistry.googleapis.com",
       "cloudbuild.googleapis.com",
       "clouddeploy.googleapis.com",
     ] : google_project_service_identity.ids[api] != null])
@@ -2368,6 +2694,22 @@ run "gcp_options_disable_dependent_services" {
     condition     = google_artifact_registry_repository.automation["oci"].repository_id == "var-gcp-variables-test-oci" && google_artifact_registry_repository.automation["oci"].format == "DOCKER" && google_artifact_registry_repository.automation["oci"].location == "us"
     error_message = "Expected OCI AR repo properties to match expectations."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
+    error_message = "Expected no upstream repo for NGINX private repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
+    error_message = "Expected no upstream repo for F5 AI private repo"
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_docker_hub), 0) == 0
+    error_message = "Expected no upstream repo for public Docker Hub repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.oci_virt), 0) == 0
+    error_message = "Expected no virtual Docker repositories."
+  }
 
   # Repo IAM bindings
   assert {
@@ -2382,32 +2724,32 @@ run "gcp_options_disable_dependent_services" {
     error_message = "Expected IaC SA to have expected AR repo roles."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.reader), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR readers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_reader), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR readers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.reader : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_reader : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
       ) && contains([
         # Expected AR roles for readers
         "roles/artifactregistry.reader",
       ], v.role)
     ])
-    error_message = "Expected AR reader role bindings to workload identities matching pattern."
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on automation repos."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.writer), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR writers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_writer), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR writers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.writer : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_writer : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/writer$", v.member)
       ) && contains([
         # Expected AR roles for writers
         "roles/artifactregistry.writer",
       ], v.role)
     ])
-    error_message = "Expected AR writer role bindings to workload identities matching pattern."
+    error_message = "Expected AR writer role bindings to workload identities matching pattern on automation repos."
   }
   assert {
     condition     = try(length(google_service_account.ar), 0) == 1
@@ -2438,6 +2780,20 @@ run "gcp_options_disable_dependent_services" {
     ])
     error_message = "Expected AR SA act as role bindings to workload identities matching pattern."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository_iam_member.virtual_reader), 0) == 0
+    error_message = "Expected no IAM bindings for Workload Identity AR readers on virtual repos."
+  }
+  assert {
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.virtual_reader : can(
+      regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
+      ) && contains([
+        # Expected AR roles for readers
+        "roles/artifactregistry.reader",
+      ], v.role)
+    ])
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on virtual repos."
+  }
 
   # GitHub integration with workload identity provider
   assert {
@@ -2464,7 +2820,7 @@ run "gcp_options_disable_dependent_services" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -2478,7 +2834,7 @@ run "gcp_options_disable_dependent_services" {
   }
   assert {
     condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    error_message = "Expected registries output to have one entry."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -2520,6 +2876,40 @@ run "gcp_options_disable_dependent_services" {
     condition     = try(length(output.deploy_sa), 0) > 0
     error_message = "Expected deploy_sa output to be not null or empty."
   }
+
+  # Secret Manager secrets
+  assert {
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
+    error_message = "Expected no NGINX JWT secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
+    error_message = "Expected no upstream NGINX Docker secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
+    error_message = "Expected no upstream F5 AI harbor secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.secrets), 0) == 0
+    error_message = "Expected no additional secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.secrets : startswith(v.secret_id, "var-gcp-variables-test-")])
+    error_message = "Expected additional secret names to start with 'var-gcp-variables-test-'."
+  }
 }
 
 run "gcp_options_create_state_bucket" {
@@ -2553,12 +2943,13 @@ run "gcp_options_create_state_bucket" {
 
   # Google service identities required by bootstrap
   assert {
-    condition     = try(length(google_project_service_identity.ids), 0) == 2
-    error_message = "Expected project to have enabled 2 service identities."
+    condition     = try(length(google_project_service_identity.ids), 0) == 3
+    error_message = "Expected project to have enabled 3 service identities."
   }
   assert {
     condition = alltrue([for api in [
       # Expected APIs with required service identities
+      "artifactregistry.googleapis.com",
       "cloudbuild.googleapis.com",
       "clouddeploy.googleapis.com",
     ] : google_project_service_identity.ids[api] != null])
@@ -2784,6 +3175,22 @@ run "gcp_options_create_state_bucket" {
     condition     = google_artifact_registry_repository.automation["oci"].repository_id == "var-gcp-variables-test-oci" && google_artifact_registry_repository.automation["oci"].format == "DOCKER" && google_artifact_registry_repository.automation["oci"].location == "us"
     error_message = "Expected OCI AR repo properties to match expectations."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
+    error_message = "Expected no upstream repo for NGINX private repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
+    error_message = "Expected no upstream repo for F5 AI private repo"
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_docker_hub), 0) == 0
+    error_message = "Expected no upstream repo for public Docker Hub repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.oci_virt), 0) == 0
+    error_message = "Expected no virtual Docker repositories."
+  }
 
   # Repo IAM bindings
   assert {
@@ -2798,32 +3205,32 @@ run "gcp_options_create_state_bucket" {
     error_message = "Expected IaC SA to have expected AR repo roles."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.reader), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR readers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_reader), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR readers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.reader : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_reader : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
       ) && contains([
         # Expected AR roles for readers
         "roles/artifactregistry.reader",
       ], v.role)
     ])
-    error_message = "Expected AR reader role bindings to workload identities matching pattern."
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on automation repos."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.writer), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR writers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_writer), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR writers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.writer : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_writer : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/writer$", v.member)
       ) && contains([
         # Expected AR roles for writers
         "roles/artifactregistry.writer",
       ], v.role)
     ])
-    error_message = "Expected AR writer role bindings to workload identities matching pattern."
+    error_message = "Expected AR writer role bindings to workload identities matching pattern on automation repos."
   }
   assert {
     condition     = try(length(google_service_account.ar), 0) == 1
@@ -2854,6 +3261,20 @@ run "gcp_options_create_state_bucket" {
     ])
     error_message = "Expected AR SA act as role bindings to workload identities matching pattern."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository_iam_member.virtual_reader), 0) == 0
+    error_message = "Expected no IAM bindings for Workload Identity AR readers on virtual repos."
+  }
+  assert {
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.virtual_reader : can(
+      regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
+      ) && contains([
+        # Expected AR roles for readers
+        "roles/artifactregistry.reader",
+      ], v.role)
+    ])
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on virtual repos."
+  }
 
   # GitHub integration with workload identity provider
   assert {
@@ -2880,7 +3301,7 @@ run "gcp_options_create_state_bucket" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -2894,7 +3315,7 @@ run "gcp_options_create_state_bucket" {
   }
   assert {
     condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    error_message = "Expected registries output to have one entry."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -2936,6 +3357,40 @@ run "gcp_options_create_state_bucket" {
     condition     = try(length(output.deploy_sa), 0) > 0
     error_message = "Expected deploy_sa output to be not null or empty."
   }
+
+  # Secret Manager secrets
+  assert {
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
+    error_message = "Expected no NGINX JWT secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
+    error_message = "Expected no upstream NGINX Docker secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
+    error_message = "Expected no upstream F5 AI harbor secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.secrets), 0) == 0
+    error_message = "Expected no additional secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.secrets : startswith(v.secret_id, "var-gcp-variables-test-")])
+    error_message = "Expected additional secret names to start with 'var-gcp-variables-test-'."
+  }
 }
 
 run "gcp_options_ar_null" {
@@ -2969,12 +3424,13 @@ run "gcp_options_ar_null" {
 
   # Google service identities required by bootstrap
   assert {
-    condition     = try(length(google_project_service_identity.ids), 0) == 2
-    error_message = "Expected project to have enabled 2 service identities."
+    condition     = try(length(google_project_service_identity.ids), 0) == 3
+    error_message = "Expected project to have enabled 3 service identities."
   }
   assert {
     condition = alltrue([for api in [
       # Expected APIs with required service identities
+      "artifactregistry.googleapis.com",
       "cloudbuild.googleapis.com",
       "clouddeploy.googleapis.com",
     ] : google_project_service_identity.ids[api] != null])
@@ -3202,6 +3658,22 @@ run "gcp_options_ar_null" {
     condition     = google_artifact_registry_repository.automation["oci"].repository_id == "var-gcp-variables-test-oci" && google_artifact_registry_repository.automation["oci"].format == "DOCKER" && google_artifact_registry_repository.automation["oci"].location == "us"
     error_message = "Expected OCI AR repo properties to match expectations."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
+    error_message = "Expected no upstream repo for NGINX private repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
+    error_message = "Expected no upstream repo for F5 AI private repo"
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_docker_hub), 0) == 0
+    error_message = "Expected no upstream repo for public Docker Hub repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.oci_virt), 0) == 0
+    error_message = "Expected no virtual Docker repositories."
+  }
 
   # Repo IAM bindings
   assert {
@@ -3216,32 +3688,32 @@ run "gcp_options_ar_null" {
     error_message = "Expected IaC SA to have expected AR repo roles."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.reader), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR readers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_reader), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR readers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.reader : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_reader : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
       ) && contains([
         # Expected AR roles for readers
         "roles/artifactregistry.reader",
       ], v.role)
     ])
-    error_message = "Expected AR reader role bindings to workload identities matching pattern."
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on automation repos."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.writer), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR writers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_writer), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR writers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.writer : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_writer : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/writer$", v.member)
       ) && contains([
         # Expected AR roles for writers
         "roles/artifactregistry.writer",
       ], v.role)
     ])
-    error_message = "Expected AR writer role bindings to workload identities matching pattern."
+    error_message = "Expected AR writer role bindings to workload identities matching pattern on automation repos."
   }
   assert {
     condition     = try(length(google_service_account.ar), 0) == 1
@@ -3272,6 +3744,20 @@ run "gcp_options_ar_null" {
     ])
     error_message = "Expected AR SA act as role bindings to workload identities matching pattern."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository_iam_member.virtual_reader), 0) == 0
+    error_message = "Expected no IAM bindings for Workload Identity AR readers on virtual repos."
+  }
+  assert {
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.virtual_reader : can(
+      regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
+      ) && contains([
+        # Expected AR roles for readers
+        "roles/artifactregistry.reader",
+      ], v.role)
+    ])
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on virtual repos."
+  }
 
   # GitHub integration with workload identity provider
   assert {
@@ -3298,7 +3784,7 @@ run "gcp_options_ar_null" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -3312,7 +3798,7 @@ run "gcp_options_ar_null" {
   }
   assert {
     condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    error_message = "Expected registries output to have one entry."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -3354,7 +3840,42 @@ run "gcp_options_ar_null" {
     condition     = try(length(output.deploy_sa), 0) > 0
     error_message = "Expected deploy_sa output to be not null or empty."
   }
+
+  # Secret Manager secrets
+  assert {
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
+    error_message = "Expected no NGINX JWT secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
+    error_message = "Expected no upstream NGINX Docker secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
+    error_message = "Expected no upstream F5 AI harbor secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.secrets), 0) == 0
+    error_message = "Expected no additional secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.secrets : startswith(v.secret_id, "var-gcp-variables-test-")])
+    error_message = "Expected additional secret names to start with 'var-gcp-variables-test-'."
+  }
 }
+
 run "gcp_options_ar_full" {
   variables {
     gcp_options = {
@@ -3391,12 +3912,13 @@ run "gcp_options_ar_full" {
 
   # Google service identities required by bootstrap
   assert {
-    condition     = try(length(google_project_service_identity.ids), 0) == 2
-    error_message = "Expected project to have enabled 2 service identities."
+    condition     = try(length(google_project_service_identity.ids), 0) == 3
+    error_message = "Expected project to have enabled 3 service identities."
   }
   assert {
     condition = alltrue([for api in [
       # Expected APIs with required service identities
+      "artifactregistry.googleapis.com",
       "cloudbuild.googleapis.com",
       "clouddeploy.googleapis.com",
     ] : google_project_service_identity.ids[api] != null])
@@ -3640,6 +4162,14 @@ run "gcp_options_ar_full" {
     condition     = google_artifact_registry_repository.automation["rpm"].repository_id == "var-gcp-variables-test-rpm" && google_artifact_registry_repository.automation["rpm"].format == "YUM" && google_artifact_registry_repository.automation["rpm"].location == "mock"
     error_message = "Expected YUM AR repo properties to match expectations."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_docker_hub), 0) == 0
+    error_message = "Expected no upstream repo for public Docker Hub repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.oci_virt), 0) == 0
+    error_message = "Expected no virtual Docker repositories."
+  }
 
   # Repo IAM bindings
   assert {
@@ -3654,32 +4184,32 @@ run "gcp_options_ar_full" {
     error_message = "Expected IaC SA to have expected AR repo roles."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.reader), 0) == 3
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_reader), 0) == 3
     error_message = "Expected three IAM bindings for Workload Identity AR readers on repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.reader : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_reader : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
       ) && contains([
         # Expected AR roles for readers
         "roles/artifactregistry.reader",
       ], v.role)
     ])
-    error_message = "Expected AR reader role bindings to workload identities matching pattern."
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on automation repos."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.writer), 0) == 3
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_writer), 0) == 3
     error_message = "Expected three IAM bindings for Workload Identity AR writers on repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.writer : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_writer : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/writer$", v.member)
       ) && contains([
         # Expected AR roles for writers
         "roles/artifactregistry.writer",
       ], v.role)
     ])
-    error_message = "Expected AR writer role bindings to workload identities matching pattern."
+    error_message = "Expected AR writer role bindings to workload identities matching pattern on automation repos."
   }
   assert {
     condition     = try(length(google_service_account.ar), 0) == 1
@@ -3709,6 +4239,20 @@ run "gcp_options_ar_full" {
       ], v.role)
     ])
     error_message = "Expected AR SA act as role bindings to workload identities matching pattern."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository_iam_member.virtual_reader), 0) == 0
+    error_message = "Expected no IAM bindings for Workload Identity AR readers on virtual repo."
+  }
+  assert {
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.virtual_reader : can(
+      regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
+      ) && contains([
+        # Expected AR roles for readers
+        "roles/artifactregistry.reader",
+      ], v.role)
+    ])
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on virtual repos."
   }
 
   # GitHub integration with workload identity provider
@@ -3798,7 +4342,7 @@ run "gcp_options_ar_full" {
   }
   assert {
     condition     = length(output.repo_identifiers) == 3
-    error_message = "Expected repo_identifiers output to have a single entry."
+    error_message = "Expected repo_identifiers output to have three entries."
   }
   assert {
     condition     = try(length(output.repo_identifiers["oci"]), 0) > 0
@@ -3832,8 +4376,41 @@ run "gcp_options_ar_full" {
     condition     = try(length(output.deploy_sa), 0) > 0
     error_message = "Expected deploy_sa output to be not null or empty."
   }
-}
 
+  # Secret Manager secrets
+  assert {
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
+    error_message = "Expected no NGINX JWT secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
+    error_message = "Expected no upstream NGINX Docker secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
+    error_message = "Expected no upstream F5 AI harbor secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.secrets), 0) == 0
+    error_message = "Expected no additional secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.secrets : startswith(v.secret_id, "var-gcp-variables-test-")])
+    error_message = "Expected additional secret names to start with 'var-gcp-variables-test-'."
+  }
+}
 
 run "state_bucket_options_null" {
   variables {
@@ -3864,12 +4441,13 @@ run "state_bucket_options_null" {
 
   # Google service identities required by bootstrap
   assert {
-    condition     = try(length(google_project_service_identity.ids), 0) == 2
-    error_message = "Expected project to have enabled 2 service identities."
+    condition     = try(length(google_project_service_identity.ids), 0) == 3
+    error_message = "Expected project to have enabled 3 service identities."
   }
   assert {
     condition = alltrue([for api in [
       # Expected APIs with required service identities
+      "artifactregistry.googleapis.com",
       "cloudbuild.googleapis.com",
       "clouddeploy.googleapis.com",
     ] : google_project_service_identity.ids[api] != null])
@@ -4097,6 +4675,22 @@ run "state_bucket_options_null" {
     condition     = google_artifact_registry_repository.automation["oci"].repository_id == "var-gcp-variables-test-oci" && google_artifact_registry_repository.automation["oci"].format == "DOCKER" && google_artifact_registry_repository.automation["oci"].location == "us"
     error_message = "Expected OCI AR repo properties to match expectations."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
+    error_message = "Expected no upstream repo for NGINX private repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
+    error_message = "Expected no upstream repo for F5 AI private repo"
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_docker_hub), 0) == 0
+    error_message = "Expected no upstream repo for public Docker Hub repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.oci_virt), 0) == 0
+    error_message = "Expected no virtual Docker repositories."
+  }
 
   # Repo IAM bindings
   assert {
@@ -4111,32 +4705,32 @@ run "state_bucket_options_null" {
     error_message = "Expected IaC SA to have expected AR repo roles."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.reader), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR readers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_reader), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR readers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.reader : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_reader : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
       ) && contains([
         # Expected AR roles for readers
         "roles/artifactregistry.reader",
       ], v.role)
     ])
-    error_message = "Expected AR reader role bindings to workload identities matching pattern."
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on automation repos."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.writer), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR writers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_writer), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR writers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.writer : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_writer : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/writer$", v.member)
       ) && contains([
         # Expected AR roles for writers
         "roles/artifactregistry.writer",
       ], v.role)
     ])
-    error_message = "Expected AR writer role bindings to workload identities matching pattern."
+    error_message = "Expected AR writer role bindings to workload identities matching pattern on automation repos."
   }
   assert {
     condition     = try(length(google_service_account.ar), 0) == 1
@@ -4167,6 +4761,20 @@ run "state_bucket_options_null" {
     ])
     error_message = "Expected AR SA act as role bindings to workload identities matching pattern."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository_iam_member.virtual_reader), 0) == 0
+    error_message = "Expected no IAM bindings for Workload Identity AR readers on virtual repos."
+  }
+  assert {
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.virtual_reader : can(
+      regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
+      ) && contains([
+        # Expected AR roles for readers
+        "roles/artifactregistry.reader",
+      ], v.role)
+    ])
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on virtual repos."
+  }
 
   # GitHub integration with workload identity provider
   assert {
@@ -4193,7 +4801,7 @@ run "state_bucket_options_null" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -4207,7 +4815,7 @@ run "state_bucket_options_null" {
   }
   assert {
     condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    error_message = "Expected registries output to have one entry."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -4248,6 +4856,40 @@ run "state_bucket_options_null" {
   assert {
     condition     = try(length(output.deploy_sa), 0) > 0
     error_message = "Expected deploy_sa output to be not null or empty."
+  }
+
+  # Secret Manager secrets
+  assert {
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
+    error_message = "Expected no NGINX JWT secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
+    error_message = "Expected no upstream NGINX Docker secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
+    error_message = "Expected no upstream F5 AI harbor secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.secrets), 0) == 0
+    error_message = "Expected no additional secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.secrets : startswith(v.secret_id, "var-gcp-variables-test-")])
+    error_message = "Expected additional secret names to start with 'var-gcp-variables-test-'."
   }
 }
 
@@ -4280,12 +4922,13 @@ run "state_bucket_options_empty" {
 
   # Google service identities required by bootstrap
   assert {
-    condition     = try(length(google_project_service_identity.ids), 0) == 2
-    error_message = "Expected project to have enabled 2 service identities."
+    condition     = try(length(google_project_service_identity.ids), 0) == 3
+    error_message = "Expected project to have enabled 3 service identities."
   }
   assert {
     condition = alltrue([for api in [
       # Expected APIs with required service identities
+      "artifactregistry.googleapis.com",
       "cloudbuild.googleapis.com",
       "clouddeploy.googleapis.com",
     ] : google_project_service_identity.ids[api] != null])
@@ -4513,6 +5156,22 @@ run "state_bucket_options_empty" {
     condition     = google_artifact_registry_repository.automation["oci"].repository_id == "var-gcp-variables-test-oci" && google_artifact_registry_repository.automation["oci"].format == "DOCKER" && google_artifact_registry_repository.automation["oci"].location == "us"
     error_message = "Expected OCI AR repo properties to match expectations."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_nginx), 0) == 0
+    error_message = "Expected no upstream repo for NGINX private repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_f5_ai), 0) == 0
+    error_message = "Expected no upstream repo for F5 AI private repo"
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.upstream_oci_docker_hub), 0) == 0
+    error_message = "Expected no upstream repo for public Docker Hub repo."
+  }
+  assert {
+    condition     = try(length(google_artifact_registry_repository.oci_virt), 0) == 0
+    error_message = "Expected no virtual Docker repositories."
+  }
 
   # Repo IAM bindings
   assert {
@@ -4527,32 +5186,32 @@ run "state_bucket_options_empty" {
     error_message = "Expected IaC SA to have expected AR repo roles."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.reader), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR readers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_reader), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR readers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.reader : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_reader : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
       ) && contains([
         # Expected AR roles for readers
         "roles/artifactregistry.reader",
       ], v.role)
     ])
-    error_message = "Expected AR reader role bindings to workload identities matching pattern."
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on automation repos."
   }
   assert {
-    condition     = try(length(google_artifact_registry_repository_iam_member.writer), 0) == 1
-    error_message = "Expected a single IAM binding for Workload Identity AR writers on repos."
+    condition     = try(length(google_artifact_registry_repository_iam_member.automation_writer), 0) == 1
+    error_message = "Expected a single IAM binding for Workload Identity AR writers on automation repos."
   }
   assert {
-    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.writer : can(
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.automation_writer : can(
       regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/writer$", v.member)
       ) && contains([
         # Expected AR roles for writers
         "roles/artifactregistry.writer",
       ], v.role)
     ])
-    error_message = "Expected AR writer role bindings to workload identities matching pattern."
+    error_message = "Expected AR writer role bindings to workload identities matching pattern on automation repos."
   }
   assert {
     condition     = try(length(google_service_account.ar), 0) == 1
@@ -4583,6 +5242,20 @@ run "state_bucket_options_empty" {
     ])
     error_message = "Expected AR SA act as role bindings to workload identities matching pattern."
   }
+  assert {
+    condition     = try(length(google_artifact_registry_repository_iam_member.virtual_reader), 0) == 0
+    error_message = "Expected no IAM bindings for Workload Identity AR readers on virtual repos."
+  }
+  assert {
+    condition = alltrue([for k, v in google_artifact_registry_repository_iam_member.virtual_reader : can(
+      regex("^principalSet://iam.googleapis.com/.*/attribute.artifact_registry/reader$", v.member)
+      ) && contains([
+        # Expected AR roles for readers
+        "roles/artifactregistry.reader",
+      ], v.role)
+    ])
+    error_message = "Expected AR reader role bindings to workload identities matching pattern on virtual repos."
+  }
 
   # GitHub integration with workload identity provider
   assert {
@@ -4609,7 +5282,7 @@ run "state_bucket_options_empty" {
   }
   assert {
     condition     = try(length(github_actions_variable.registry), 0) == 1
-    error_message = "Expected a GitHub variable for a single AR repo."
+    error_message = "Expected a GitHub variable for one AR repo."
   }
   assert {
     condition     = github_actions_variable.registry["OCI_REGISTRY"].variable_name == "OCI_REGISTRY"
@@ -4623,7 +5296,7 @@ run "state_bucket_options_empty" {
   }
   assert {
     condition     = length(output.registries) == 1
-    error_message = "Expected registries output to have a single entry."
+    error_message = "Expected registries output to have one entry."
   }
   assert {
     condition     = output.registries["oci"] != null
@@ -4664,5 +5337,39 @@ run "state_bucket_options_empty" {
   assert {
     condition     = try(length(output.deploy_sa), 0) > 0
     error_message = "Expected deploy_sa output to be not null or empty."
+  }
+
+  # Secret Manager secrets
+  assert {
+    condition     = try(length(google_secret_manager_secret.nginx_jwt), 0) == 0
+    error_message = "Expected no NGINX JWT secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.nginx_jwt : v.secret_id == "var-gcp-variables-test-nginx-jwt"])
+    error_message = "Expected NGINX JWT secret name to be 'var-gcp-variables-test-nginx-jwt'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_nginx), 0) == 0
+    error_message = "Expected no upstream NGINX Docker secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_nginx : v.secret_id == "var-gcp-variables-test-upstream-oci-nginx"])
+    error_message = "Expected upstream NGINX Docker secret name to be 'var-gcp-variables-test-upstream-oci-nginx'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.upstream_oci_password_f5_ai), 0) == 0
+    error_message = "Expected no upstream F5 AI harbor secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.upstream_oci_password_f5_ai : v.secret_id == "var-gcp-variables-test-upstream-oci-password-f5-ai"])
+    error_message = "Expected upstream F5 AI harbor secret name to be 'var-gcp-variables-test-upstream-oci-password-f5-ai'."
+  }
+  assert {
+    condition     = try(length(google_secret_manager_secret.secrets), 0) == 0
+    error_message = "Expected no additional secrets to be created."
+  }
+  assert {
+    condition     = alltrue([for k, v in google_secret_manager_secret.secrets : startswith(v.secret_id, "var-gcp-variables-test-")])
+    error_message = "Expected additional secret names to start with 'var-gcp-variables-test-'."
   }
 }

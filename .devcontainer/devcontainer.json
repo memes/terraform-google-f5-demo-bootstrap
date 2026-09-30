@@ -9,7 +9,6 @@
         "ghcr.io/devcontainers-extra/features/opentofu:1": {},
         "ghcr.io/devcontainers-extra/features/terraform-docs:1": {},
         "ghcr.io/memes/devcontainers-features/google-cloud-cli:1": {},
-        "ghcr.io/memes/devcontainers-features/hadolint:1": {},
         "ghcr.io/memes/devcontainers-features/talisman:1": {},
         "ghcr.io/memes/devcontainers-features/tflint:1": {}
     },

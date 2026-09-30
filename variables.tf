@@ -45,7 +45,7 @@ variable "github_options" {
     private_repo       = optional(bool, false)
     name               = optional(string)
     description        = optional(string, "Bootstrapped automation repository")
-    template           = optional(string, "memes/terraform-google-f5-demo-bootstrap-template")
+    template           = optional(string, "f5-architects/terraform-google-f5-demo-bootstrap-template")
     archive_on_destroy = optional(bool, true)
     collaborators      = optional(set(string))
     ssh_deploy_key     = optional(bool, false)
@@ -56,7 +56,7 @@ variable "github_options" {
     private_repo       = false
     name               = ""
     description        = "Bootstrapped automation repository"
-    template           = "memes/terraform-google-f5-demo-bootstrap-template"
+    template           = "f5-architects/terraform-google-f5-demo-bootstrap-template"
     archive_on_destroy = true
     collaborators      = []
     ssh_deploy_key     = false
@@ -64,7 +64,7 @@ variable "github_options" {
   }
   description = <<-EOD
   Defines the parameters for the GitHub repository to create for the demo. By default the GitHub repo will be public,
-  named from the `name` variable and populated from `memes/terraform-google-f5-demo-bootstrap-template` repo. Use this
+  named from the `name` variable and populated from `f5-architects/terraform-google-f5-demo-bootstrap-template` repo. Use this
   variable to override one or more of these defaults as needed.
   EOD
 }

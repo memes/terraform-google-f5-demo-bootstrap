@@ -22,7 +22,7 @@ resource "github_repository" "automation" {
   visibility         = try(var.github_options.private_repo, false) ? "private" : "public"
   archive_on_destroy = try(var.github_options.archive_on_destroy, true)
   dynamic "template" {
-    for_each = coalesce(try(var.github_options.template, "memes/terraform-google-f5-demo-bootstrap-template"), "unspecified") == "unspecified" ? {} : { template = { owner = reverse(split("/", try(var.github_options.template, "memes/terraform-google-f5-demo-bootstrap-template")))[1], name = reverse(split("/", try(var.github_options.template, "memes/terraform-google-f5-demo-bootstrap-template")))[0] } }
+    for_each = coalesce(try(var.github_options.template, "f5-architects/terraform-google-f5-demo-bootstrap-template"), "unspecified") == "unspecified" ? {} : { template = { owner = reverse(split("/", try(var.github_options.template, "f5-architects/terraform-google-f5-demo-bootstrap-template")))[1], name = reverse(split("/", try(var.github_options.template, "f5-architects/terraform-google-f5-demo-bootstrap-template")))[0] } }
     content {
       owner                = template.value.owner
       repository           = template.value.name
@@ -163,7 +163,7 @@ resource "github_actions_repository_permissions" "automation" {
   allowed_actions      = "selected"
   allowed_actions_config {
     github_owned_allowed = true
-    # These are the actions used in memes/terraform-google-f5-demo-bootstrap-template .github/workflow actions that are
+    # These are the actions used in f5-architects/terraform-google-f5-demo-bootstrap-template .github/workflow actions that are
     # not authored by GitHub.
     patterns_allowed = [
       "GoogleCloudPlatform/release-please-action@*",

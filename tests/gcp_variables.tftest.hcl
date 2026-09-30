@@ -162,7 +162,7 @@ run "gcp_options_null" {
   }
   assert {
     condition = alltrue([for k, v in google_service_account_iam_member.deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy SA impersonation roles to bind to workload identities
         "roles/iam.workloadIdentityUser",
@@ -178,7 +178,7 @@ run "gcp_options_null" {
   }
   assert {
     condition = alltrue([for k, v in google_project_iam_member.cloud_deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy releaser roles
         "roles/clouddeploy.releaser",
@@ -636,7 +636,7 @@ run "gcp_options_empty" {
   }
   assert {
     condition = alltrue([for k, v in google_service_account_iam_member.deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy SA impersonation roles to bind to workload identities
         "roles/iam.workloadIdentityUser",
@@ -652,7 +652,7 @@ run "gcp_options_empty" {
   }
   assert {
     condition = alltrue([for k, v in google_project_iam_member.cloud_deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy releaser roles
         "roles/clouddeploy.releaser",
@@ -1117,7 +1117,7 @@ run "gcp_options_disable_infra_manager" {
   }
   assert {
     condition = alltrue([for k, v in google_service_account_iam_member.deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy SA impersonation roles to bind to workload identities
         "roles/iam.workloadIdentityUser",
@@ -1133,7 +1133,7 @@ run "gcp_options_disable_infra_manager" {
   }
   assert {
     condition = alltrue([for k, v in google_project_iam_member.cloud_deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy releaser roles
         "roles/clouddeploy.releaser",
@@ -1595,7 +1595,7 @@ run "gcp_options_disable_cloud_deploy" {
   }
   assert {
     condition = alltrue([for k, v in google_service_account_iam_member.deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy SA impersonation roles to bind to workload identities
       ], v.role)
@@ -1610,7 +1610,7 @@ run "gcp_options_disable_cloud_deploy" {
   }
   assert {
     condition = alltrue([for k, v in google_project_iam_member.cloud_deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy releaser roles
       ], v.role)
@@ -2073,7 +2073,7 @@ run "gcp_options_services_disable_on_destroy" {
   }
   assert {
     condition = alltrue([for k, v in google_service_account_iam_member.deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy SA impersonation roles to bind to workload identities
         "roles/iam.workloadIdentityUser",
@@ -2089,7 +2089,7 @@ run "gcp_options_services_disable_on_destroy" {
   }
   assert {
     condition = alltrue([for k, v in google_project_iam_member.cloud_deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy releaser roles
         "roles/clouddeploy.releaser",
@@ -2556,7 +2556,7 @@ run "gcp_options_disable_dependent_services" {
   }
   assert {
     condition = alltrue([for k, v in google_service_account_iam_member.deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy SA impersonation roles to bind to workload identities
         "roles/iam.workloadIdentityUser",
@@ -2572,7 +2572,7 @@ run "gcp_options_disable_dependent_services" {
   }
   assert {
     condition = alltrue([for k, v in google_project_iam_member.cloud_deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy releaser roles
         "roles/clouddeploy.releaser",
@@ -3039,7 +3039,7 @@ run "gcp_options_create_state_bucket" {
   }
   assert {
     condition = alltrue([for k, v in google_service_account_iam_member.deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy SA impersonation roles to bind to workload identities
         "roles/iam.workloadIdentityUser",
@@ -3055,7 +3055,7 @@ run "gcp_options_create_state_bucket" {
   }
   assert {
     condition = alltrue([for k, v in google_project_iam_member.cloud_deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy releaser roles
         "roles/clouddeploy.releaser",
@@ -3520,7 +3520,7 @@ run "gcp_options_ar_null" {
   }
   assert {
     condition = alltrue([for k, v in google_service_account_iam_member.deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy SA impersonation roles to bind to workload identities
         "roles/iam.workloadIdentityUser",
@@ -3536,7 +3536,7 @@ run "gcp_options_ar_null" {
   }
   assert {
     condition = alltrue([for k, v in google_project_iam_member.cloud_deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy releaser roles
         "roles/clouddeploy.releaser",
@@ -4008,7 +4008,7 @@ run "gcp_options_ar_full" {
   }
   assert {
     condition = alltrue([for k, v in google_service_account_iam_member.deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy SA impersonation roles to bind to workload identities
         "roles/iam.workloadIdentityUser",
@@ -4024,7 +4024,7 @@ run "gcp_options_ar_full" {
   }
   assert {
     condition = alltrue([for k, v in google_project_iam_member.cloud_deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy releaser roles
         "roles/clouddeploy.releaser",
@@ -4537,7 +4537,7 @@ run "state_bucket_options_null" {
   }
   assert {
     condition = alltrue([for k, v in google_service_account_iam_member.deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy SA impersonation roles to bind to workload identities
         "roles/iam.workloadIdentityUser",
@@ -4553,7 +4553,7 @@ run "state_bucket_options_null" {
   }
   assert {
     condition = alltrue([for k, v in google_project_iam_member.cloud_deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy releaser roles
         "roles/clouddeploy.releaser",
@@ -5018,7 +5018,7 @@ run "state_bucket_options_empty" {
   }
   assert {
     condition = alltrue([for k, v in google_service_account_iam_member.deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy SA impersonation roles to bind to workload identities
         "roles/iam.workloadIdentityUser",
@@ -5034,7 +5034,7 @@ run "state_bucket_options_empty" {
   }
   assert {
     condition = alltrue([for k, v in google_project_iam_member.cloud_deploy : can(
-      regex("^principalSet://iam.googleapis.com/.*/attribute.deploy_sa/enabled$", v.member)
+      regex("^principalSet://iam.googleapis.com/.*/attribute.cloud_deploy/enabled$", v.member)
       ) && contains([
         # Expected Cloud Deploy releaser roles
         "roles/clouddeploy.releaser",

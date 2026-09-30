@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.7.0](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.6.1...v0.7.0) (2026-09-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* This removes modules and containers from the repo.
+* GitHub actions in existing repos in a GitHub organization will break unless the `github_options.org` field and `github` provider are updated to acknowledge the org correctly.
+
+### Features
+
+* Add Docker Hub repo option and verify creds ([07d657d](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/07d657d22b252f08660eff62ea2a6da78e1ccc41))
+* Add generic secrets, remove f5_ai_license ([5f8dad9](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/5f8dad99c7f611fdfe8116915796fed253aac145))
+* Remove support for Atlantis on F5 XC RE ([22a470e](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/22a470e7d8963e34935de6899fe7bd124971fae7))
+* Virtual OCI repo with private upstreams ([376bffc](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/376bffc6b0894e7e7f632a463d29f1e45d0332ca))
+
+
+### Bug Fixes
+
+* Add TF dependency on secret IAM for AR ([37d52d9](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/37d52d9afbadbabc17aadc89268b58ccece01e47))
+* Allow AR identity to read F5 AI password ([5b5381d](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/5b5381d8660fe01c2dff32dbc7c53f953b147f41))
+* AR service identity can read harbor password ([a1b38ea](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/a1b38ea58de93f881aa808a187e44b3182316e63))
+* AR svc dentity reader role to repos for virt ([6e026eb](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/6e026eb265d731e8fd5c416fc9235cb169cad43e))
+* Cherry picked fixes from cloud_deploy branch ([a6d8868](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/a6d88682911878a3ab192e11e19a797fe03ffbbb))
+* Consistent resource naming, virt OCI optional ([070d2b7](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/070d2b7017dcb9bf8d945564c5c0b5e3da975f33))
+* Default to f5-architects bootstrap template ([3f4ccf6](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/3f4ccf609312215248818226570ff2fd01a11dc4))
+* Do not enable immutable tags on OCI repo ([0cddb17](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/0cddb17358a189c55d0e9e4d92de28b47fb69c02))
+* Improve GitHub actions security ([af1da85](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/af1da855bf2c00278599ddc9c63fd1e59593b08e))
+* Include bootstrap name as GHA variable ([8b89f8e](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/8b89f8e913dfbb29037dd622e3905ec30d828510))
+* Make virtual repo an option, clean up logic ([6e42041](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/6e42041dc0aed2ee105777ec7f7ee9824115f99f))
+* Support additional AR repos in virt OCI repo ([35a72d3](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/35a72d30a4595f9b79731c75420e58eef9c979d9))
+* Use correct F5 AI password secret ([0f24d1b](https://github.com/memes/terraform-google-f5-demo-bootstrap/commit/0f24d1b56c9a85eeb4e171b0c045e97f66a79432))
+
 ## [0.6.1](https://github.com/memes/terraform-google-f5-demo-bootstrap/compare/v0.6.0...v0.6.1) (2026-07-13)
 
 
